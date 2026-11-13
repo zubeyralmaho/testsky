@@ -4,8 +4,9 @@
 #
 # Check it with: testsky doctor --samples 5
 
-# Refuse any host that is not one of the endpoints below. A security team can
-# verify this claim in five minutes, which is the point of making it.
+# Refuses a host that is not one of the endpoints below. testsky calls no other
+# host anyway, so this does not keep screens on the machine: for that, make
+# every endpoint below a local one.
 offline: false
 
 tiers:
