@@ -60,3 +60,13 @@ test("a phone another program is at work on is said to be in use, by program and
   assert.deepEqual(othersUsing(ps, ["R58M1234"], new Set([106])), ["pid 104 (scrcpy, running 04:26:31)"], "a mirror somebody has open is somebody at the phone");
   assert.deepEqual(othersUsing(ps, ["ABCD1234EFGH5678"], new Set()), []);
 });
+
+test("an MCP server is not at work on the phones it may use: it holds one only by the lease, and its runs name the phone themselves", () => {
+  const ps = [
+    "  201    20:46 /Users/runner/node22/bin/node apps/cli/src/main.ts mcp --devices 00008030-001A2B3C4D5E6F70,QV7701XYZW --out /Users/runner/runs",
+    "  202    11:39 testsky mcp --devices QV7701XYZW",
+    "  203    00:12 /Users/runner/node22/bin/node /Users/runner/testsky/apps/cli/src/main.ts run --json checkout.testsky.yaml --devices QV7701XYZW",
+  ].join("\n");
+  assert.deepEqual(othersUsing(ps, ["QV7701XYZW"], new Set()), ["pid 203 (node src/main.ts, running 00:12)"]);
+  assert.deepEqual(othersUsing(ps, ["00008030-001A2B3C4D5E6F70"], new Set()), []);
+});

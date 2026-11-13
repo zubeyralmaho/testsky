@@ -247,6 +247,10 @@ export function othersUsing(ps: string, ids: string[], mine: ReadonlySet<number>
     if (mine.has(Number(pid)) || !named.some((id) => id.test(command))) continue;
     // What keeps a phone reachable, or reads it without driving it.
     if (/(?:^|\/)(?:iproxy|idevice\w*)\s|WebDriverAgent/.test(command)) continue;
+    // A testsky MCP server names the phones it may use, not one it is using:
+    // it holds a phone only by the lease, as a run does. Two idle servers,
+    // left by two Claude sessions, refused every run on their four phones.
+    if (/(?:^|[\s/])(?:main\.ts|testsky)\s+mcp(?:\s|$)/.test(command)) continue;
     // Said by program and script, never by its arguments: a run's arguments
     // may carry secrets.
     const words = command.split(/\s+/);
