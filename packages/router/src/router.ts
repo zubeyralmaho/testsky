@@ -364,12 +364,9 @@ export class Router {
   }
 
   /**
-   * The offline promise, enforced rather than described.
-   *
-   * A security team can read this in five minutes; that is the point. With
-   * `offline: true` the router refuses any host that is not one of the
-   * configured endpoints, so "nothing leaves the building" is a property of
-   * the code rather than a sentence in a PDF.
+   * With `offline: true`, a host that is not one of the configured endpoints
+   * is refused. Every call already goes to a configured tier, so this keeps
+   * no screen on the machine by itself: endpoints that are local do that.
    */
   private assertAllowed(config: ModelConfig): void {
     if (!this.config.offline) return;

@@ -68,7 +68,7 @@ export interface RouterConfig {
     escalation?: ModelConfig;
     triage?: ModelConfig;
   };
-  /** Refuse any host outside the configured base URLs. */
+  /** Refuse any host outside the configured base URLs. Every call goes to one of them anyway: this keeps nothing local by itself. */
   offline?: boolean;
   limits?: { maxUsdPerTest?: number; maxUsdPerRun?: number };
 }
