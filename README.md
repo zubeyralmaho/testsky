@@ -2,7 +2,7 @@
   <a href="https://testsky.vercel.app">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="assets/brand/readme-top-night.webp">
-      <img src="assets/brand/readme-top-day.webp" alt="testsky. The sky's the limit. Test it. A phone on a Settings screen: the picture and the accessibility tree both point at the Wi-Fi row, which is marked Agreed.">
+      <img src="assets/brand/readme-top-day.webp" alt="testsky. Sky is the limit. Test it. A phone on a Settings screen: the picture and the accessibility tree both point at the Wi-Fi row, which is marked Agreed.">
     </picture>
   </a>
 </p>
