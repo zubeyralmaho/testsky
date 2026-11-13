@@ -197,6 +197,12 @@ export interface GroundResult {
    * nothing or was outranked.
    */
   foundBy?: "both" | "model" | "tree";
+  /**
+   * What the accessibility tree answered on its own, in its words: the one
+   * control it names, or why it names none. Kept whoever won, so a report
+   * shows the tree's side of every target it was asked about.
+   */
+  treeSaid?: string;
 }
 
 export type ActionName =

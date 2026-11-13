@@ -52,6 +52,8 @@ export interface VisionAsk {
   image?: Buffer;
   /** The user text carries the screen's accessibility tree. */
   tree?: boolean;
+  /** The tree's own lines, exactly as they appear in `user`: for the call's record, which shows them apart. Not sent twice. */
+  treeLines?: string;
   /** Lower is more repeatable; grounding wants near-zero. */
   temperature?: number;
 }
@@ -59,6 +61,45 @@ export interface VisionAsk {
 export interface VisionAnswer {
   text: string;
   provenance: Provenance;
+  /** What the model thought before it answered, word for word, when its host sends it back. */
+  reasoning?: string;
+}
+
+/** The message of a chat completion, as far as an answer and the thinking before it go. */
+interface ChatMessage {
+  content?: string;
+  /** OpenRouter's thinking. */
+  reasoning?: string;
+  /** vLLM's and DeepSeek's. */
+  reasoning_content?: string;
+  /** OpenRouter's thinking in parts: text, or a summary of it. */
+  reasoning_details?: { text?: unknown; summary?: unknown }[];
+}
+
+const THINK = /^\s*<think>([\s\S]*?)<\/think>/i;
+
+/**
+ * What a model thought before it answered, when its host says: in a field of
+ * its own -- each host names it differently -- or, from hosts that leave it in
+ * the answer, the <think> block the answer opens with. Nothing is asked for
+ * that was not already coming: thinking a host does not send is not bought for
+ * a report.
+ */
+export function reasoningOf(message: ChatMessage | undefined): string | undefined {
+  if (!message) return undefined;
+  const parts = [
+    message.reasoning,
+    message.reasoning_content,
+    ...(Array.isArray(message.reasoning_details)
+      ? message.reasoning_details.map((detail) => (typeof detail?.text === "string" ? detail.text : typeof detail?.summary === "string" ? detail.summary : undefined))
+      : []),
+  ].filter((part): part is string => typeof part === "string" && part.trim() !== "");
+  // OpenRouter sends the same thinking as one string and again in parts.
+  const said = [...new Set(parts.map((part) => part.trim()))];
+  if (said.length > 1 && said.slice(1).every((part) => said[0]!.includes(part))) said.splice(1);
+  if (said.length) return said.join("\n\n");
+  const think = typeof message.content === "string" ? THINK.exec(message.content)?.[1]?.trim() : undefined;
+  return think || undefined;
 }
 
 interface ChatUsage {
@@ -180,7 +221,7 @@ export async function askVision(
   }
 
   let payload: {
-    choices?: { message?: { content?: string }; finish_reason?: string }[];
+    choices?: { message?: ChatMessage; finish_reason?: string }[];
     usage?: ChatUsage;
     provider?: string;
   };
@@ -214,7 +255,8 @@ export async function askVision(
   if (payload.usage?.prompt_tokens !== undefined) provenance.tokensIn = payload.usage.prompt_tokens;
   if (payload.usage?.completion_tokens !== undefined) provenance.tokensOut = payload.usage.completion_tokens;
 
-  return { text, provenance };
+  const reasoning = reasoningOf(choice?.message);
+  return { text, provenance, ...(reasoning ? { reasoning } : {}) };
 }
 
 /**

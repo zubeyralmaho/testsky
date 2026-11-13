@@ -3,6 +3,7 @@ import test from "node:test";
 
 import type { Observation, TreeNode } from "@testsky/engine-core";
 import { fixtureScreen } from "@testsky/perception";
+import { pictureId } from "./ledger.ts";
 import { Router } from "./router.ts";
 import { BlindScreenError } from "./router.ts";
 
@@ -479,5 +480,37 @@ test("an orientation is told to the judge from the frame's size, not left to the
     assert.match(partsOf(stub.bodies[0]!).text, /the screen is 360 by 720 points, so it is in portrait/);
   } finally {
     stub.restore();
+  }
+});
+
+test("each call is kept whole: the words it was sent, where the tree is in them, the picture and the thinking", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () =>
+    new Response(
+      JSON.stringify({
+        choices: [{ message: { content: JSON.stringify({ found: true, point: [500, 500], why: "the PIN field" }), reasoning: "The tree has one field." }, finish_reason: "stop" }],
+        usage: { prompt_tokens: 10, completion_tokens: 5 },
+      }),
+      { status: 200, headers: { "content-type": "application/json" } },
+    )) as unknown as typeof globalThis.fetch;
+  try {
+    const router = new Router(CONFIG);
+    const found = await router.ground({
+      observation: observation({ tree: TREE }),
+      description: "the PIN field",
+      budget: { maxUsd: 1, maxLatencyMs: 10_000, maxEscalations: 0 },
+    });
+    const [call] = router.ledger.all();
+    assert.equal(call!.reasoning, "The tree has one field.");
+    assert.ok(call!.asked?.system.length, "the instructions it was given");
+    const tree = call!.asked!.user.slice(...call!.asked!.treeSpan!);
+    assert.match(tree, /PIN kodunu girin/);
+    assert.doesNotMatch(tree, /Find this element/, "the tree's own lines, and nothing around them");
+    assert.equal(call!.asked!.image, pictureId(FRAME), "the picture it was shown, known by the screen it came as");
+    const kept = router.ledger.pictures.get(call!.asked!.image!)!;
+    assert.deepEqual([kept[0], kept[1]], [0xff, 0xd8], "and kept small, as a JPEG");
+    assert.equal(typeof found.treeSaid, "string", "and what the tree answered on its own");
+  } finally {
+    globalThis.fetch = original;
   }
 });

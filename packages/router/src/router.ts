@@ -51,13 +51,14 @@ import {
   markPoint,
   patchHash,
   pointsAtNothing,
+  toJpeg,
   treeEvidence,
 } from "@testsky/perception";
 
 import { askVision, gaveNoAnswer, ModelError, parseJsonAnswer } from "./client.ts";
 import { calibrateConfidence } from "./confidence.ts";
 import { allowedHosts, type ModelConfig, type RouterConfig } from "./config.ts";
-import { CostLedger, type LedgerEntry } from "./ledger.ts";
+import { CostLedger, type LedgerEntry, pictureId } from "./ledger.ts";
 
 /**
  * A model's answer, in device points.
@@ -423,7 +424,13 @@ export class Router {
         silent = attempt.config;
         continue;
       }
-      this.ledger.record(purpose, answer.provenance, stepId, answer.text);
+      this.ledger.record(purpose, answer.provenance, stepId, answer.text, {
+        system: attempt.ask.system,
+        user: attempt.ask.user,
+        ...(attempt.ask.image ? { picture: await this.keptPicture(attempt.ask.image) } : {}),
+        ...(attempt.ask.treeLines ? { tree: attempt.ask.treeLines } : {}),
+        ...(answer.reasoning ? { reasoning: answer.reasoning } : {}),
+      });
       try {
         const parsed = parseJsonAnswer<T>(answer.text);
         const complaint = unreadable?.(parsed);
@@ -434,6 +441,18 @@ export class Router {
       }
     }
     throw lastError;
+  }
+
+  /**
+   * The picture a call was shown, as its record keeps it: by the bytes the
+   * screen came as, and made small once -- a model waiting on a screen is
+   * shown it again and again, and a full-size PNG of each would be hundreds
+   * of megabytes by the end of a long run.
+   */
+  private async keptPicture(image: Buffer): Promise<{ id: string; bytes: Buffer }> {
+    const id = pictureId(image);
+    const kept = this.ledger.pictures.get(id);
+    return { id, bytes: kept ?? (await toJpeg(image).catch(() => image)) };
   }
 
   private readonly config: RouterConfig;
@@ -478,8 +497,8 @@ export class Router {
   }
 
   /** What a question shows the model besides its words: the picture, and whether the words carry the tree. */
-  private static shown(seen: { image?: Buffer; tree?: string }): { image?: Buffer; tree?: true } {
-    return { ...(seen.image ? { image: seen.image } : {}), ...(seen.tree ? { tree: true as const } : {}) };
+  private static shown(seen: { image?: Buffer; tree?: string }): { image?: Buffer; tree?: true; treeLines?: string } {
+    return { ...(seen.image ? { image: seen.image } : {}), ...(seen.tree ? { tree: true as const, treeLines: seen.tree } : {}) };
   }
 
   /** The tree lines, as a block the prompt can carry. */
@@ -615,6 +634,7 @@ export class Router {
           ? answer.provenance
           : { tier: 0, usd: 0, latencyMs: Date.now() - started, usedTree: true, channel: "tree" },
         foundBy: answer ? "both" : "tree",
+        treeSaid: opinion!.reason,
       };
     };
 
@@ -668,7 +688,8 @@ export class Router {
         if (error instanceof NotOnScreenError) throw error;
       }
     }
-    return this.fromModel(req, best, seen.image !== undefined, tree);
+    const result = await this.fromModel(req, best, seen.image !== undefined, tree);
+    return opinion ? { ...result, treeSaid: opinion.reason } : result;
   }
 
   /** A model's answer as a result: its point, or the tree's measure of the control its box is the box of. */

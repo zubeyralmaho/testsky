@@ -444,6 +444,7 @@ function describeGrounding(ground: GroundResult): Record<string, unknown> {
     confidence: Math.round(ground.confidence * 100) / 100,
     ...(ground.rect ? { box: ground.rect } : {}),
     ...(ground.why ? { why: ground.why } : {}),
+    ...(ground.treeSaid ? { treeAnswer: ground.treeSaid } : {}),
   };
 }
 

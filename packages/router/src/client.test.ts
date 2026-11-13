@@ -4,7 +4,7 @@ import test from "node:test";
 
 import sharp from "sharp";
 
-import { askVision, ModelError, parseJsonAnswer } from "./client.ts";
+import { askVision, ModelError, parseJsonAnswer, reasoningOf } from "./client.ts";
 
 test("reads the JSON a model actually returns, not the JSON we asked for", () => {
   assert.deepEqual(parseJsonAnswer('{"found": true, "point": [10, 20]}'), { found: true, point: [10, 20] });
@@ -243,6 +243,37 @@ test("a frame goes as a JPEG of the same size, however small, and what is not a 
     assert.equal((await sharp(Buffer.from(sent[0]!.split(",")[1]!, "base64")).metadata()).width, 1300, "the same frame: a point on it is still a point on the screen");
     assert.match(sent[1]!, /^data:image\/jpeg;base64,/);
     assert.equal(sent[2], `data:image/png;base64,${notAPicture.toString("base64")}`);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test("the thinking a host sends back is kept, wherever that host puts it", () => {
+  assert.equal(reasoningOf({ content: "{}", reasoning: "OpenRouter's" }), "OpenRouter's");
+  assert.equal(reasoningOf({ content: "{}", reasoning_content: "vLLM's" }), "vLLM's");
+  assert.equal(
+    reasoningOf({ content: "{}", reasoning: "all of it", reasoning_details: [{ text: "all of it" }] }),
+    "all of it",
+    "said once and again in parts is said once",
+  );
+  assert.equal(reasoningOf({ content: "{}", reasoning_details: [{ summary: "a summary" }, { text: "and the rest" }] }), "a summary\n\nand the rest");
+  assert.equal(reasoningOf({ content: '<think>\nlet me look\n</think>\n{"pass": true}' }), "let me look", "a host that leaves it in the answer");
+  assert.equal(reasoningOf({ content: "{}" }), undefined);
+  assert.equal(reasoningOf({ content: "{}", reasoning: "  " }), undefined);
+  assert.equal(reasoningOf(undefined), undefined);
+});
+
+test("an answer comes back with the thinking before it, when the host sends that", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () =>
+    new Response(JSON.stringify({ choices: [{ message: { content: '{"pass": true}', reasoning: "looked twice" }, finish_reason: "stop" }] }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    })) as unknown as typeof globalThis.fetch;
+  try {
+    const answer = await askVision({ baseUrl: "http://h/v1", model: "thinker" }, { system: "s", user: "u" }, 1);
+    assert.equal(answer.text, '{"pass": true}');
+    assert.equal(answer.reasoning, "looked twice");
   } finally {
     globalThis.fetch = original;
   }

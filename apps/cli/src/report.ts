@@ -142,7 +142,7 @@ export function exitCodeFor(result: TestResult): number {
 /** The ledger a kept run's calls make again: the same totals, for a run read back from its folder. */
 export function ledgerOf(calls: readonly LedgerEntry[] = []): CostLedger {
   const ledger = new CostLedger();
-  for (const { purpose, stepId, answer, at: _at, ...provenance } of calls) ledger.record(purpose, provenance, stepId, answer);
+  for (const { purpose, stepId, answer, at: _at, asked: _asked, reasoning: _reasoning, ...provenance } of calls) ledger.record(purpose, provenance, stepId, answer);
   return ledger;
 }
 

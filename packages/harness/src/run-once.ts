@@ -29,6 +29,7 @@ import { appOn, runTest, type RunEvent, type TestResult } from "@testsky/executo
 import { toJpeg, toWebp } from "@testsky/perception";
 import { CostLedger, Router, routerConfigFromEnv, type RouterConfig } from "@testsky/router";
 
+import { reportImages } from "./images.ts";
 import { saveLock, type OpenedLock } from "./memory.ts";
 import type { RunRecord } from "./record.ts";
 
@@ -282,8 +283,9 @@ export class TestRun {
         ...(options.pullRequest ? { pullRequest: true } : {}),
       };
       const { events: all, shots: frames } = kept();
-      const encoded = (encode: (png: Buffer) => Promise<Buffer>) =>
-        Promise.all([...frames].map(async ([id, png]) => [id, (await encode(png)).toString("base64")] as const)).then(Object.fromEntries);
+      // The frames the run kept, and every picture a model was shown: a
+      // report shows each call on what it saw.
+      const encoded = (encode: (png: Buffer) => Promise<Buffer>) => reportImages(frames, ledger.pictures, encode);
       const html = buildReport({
         result,
         events: all,

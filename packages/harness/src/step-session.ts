@@ -70,6 +70,8 @@ export interface TriedStep {
   shots: Map<string, Buffer>;
   /** The model calls it made. */
   calls: LedgerEntry[];
+  /** The pictures those calls were shown, by the ids their records name. */
+  pictures: Map<string, Buffer>;
   passed: boolean;
   /** What it read off the screen for a read; whether it held for a check; nothing for an action. */
   answer: unknown;
@@ -86,6 +88,8 @@ export interface Located {
   /** What the accessibility tree alone says, in words. */
   tree?: string;
   calls: LedgerEntry[];
+  /** The pictures those calls were shown, by the ids their records name. */
+  pictures: Map<string, Buffer>;
 }
 
 /** What saving an instruction did. */
@@ -201,12 +205,14 @@ export class StepSession {
           ? `${named.target.node.role} "${named.target.node.label ?? named.target.node.identifier ?? ""}" at ${boxWords(named.target.rect)} -- ${named.reason}`
           : named.reason
         : undefined;
+      const calls = this.ledger.all().slice(before);
       return {
         observation,
         ...(asked.found ? { found: asked.found } : {}),
         ...(asked.refused ? { refused: asked.refused } : {}),
         ...(tree ? { tree } : {}),
-        calls: this.ledger.all().slice(before),
+        calls,
+        pictures: this.ledger.takePictures(calls),
       };
     } finally {
       this.busy = false;
@@ -270,13 +276,15 @@ export class StepSession {
         ...(verdict ? { verdict } : {}),
         ...(size ? { size } : {}),
       });
+      const calls = ledger.all().slice(before);
       return {
         id: stepId,
         step,
         result,
         events,
         shots,
-        calls: ledger.all().slice(before),
+        calls,
+        pictures: ledger.takePictures(calls),
         passed: failure === null,
         answer: answerOf(step, result),
         failure,
