@@ -179,7 +179,9 @@ export async function askVision(
       { role: "system", content: ask.system },
       { role: "user", content },
     ],
-    ...(onOpenRouter(cfg) ? { usage: { include: true }, ...(cfg.provider ? { provider: cfg.provider } : {}) } : {}),
+    ...(onOpenRouter(cfg)
+      ? { usage: { include: true }, ...(cfg.provider ? { provider: cfg.provider } : {}), ...(cfg.reasoning ? { reasoning: cfg.reasoning } : {}) }
+      : {}),
   });
 
   const startedAt = Date.now();

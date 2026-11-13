@@ -45,6 +45,14 @@ export interface ModelConfig {
    * input tokens, and 260 calls cost 3.5 times the catalogue price.
    */
   provider?: Record<string, unknown>;
+  /**
+   * OpenRouter's reasoning settings, sent as they are written. `{enabled:
+   * true}` has Claude Haiku 5.5 send back a summary of the thinking it does
+   * anyway: left out, its host omits the text and bills the same thinking
+   * (measured 11-13: 44-55 thinking tokens either way). On a model that does
+   * not think unless told to, it turns thinking on, and that costs.
+   */
+  reasoning?: Record<string, unknown>;
 }
 
 /**
@@ -115,6 +123,7 @@ interface YamlTier {
   max_tokens?: number;
   temperature?: boolean;
   provider?: Record<string, unknown>;
+  reasoning?: Record<string, unknown>;
   enabled?: boolean;
 }
 
@@ -131,6 +140,7 @@ function tierFromYaml(raw: YamlTier | undefined): ModelConfig | undefined {
   if (raw.max_tokens !== undefined) config.maxTokens = raw.max_tokens;
   if (raw.temperature === false) config.temperature = false;
   if (raw.provider && typeof raw.provider === "object" && !Array.isArray(raw.provider)) config.provider = raw.provider;
+  if (raw.reasoning && typeof raw.reasoning === "object" && !Array.isArray(raw.reasoning)) config.reasoning = raw.reasoning;
   return config;
 }
 

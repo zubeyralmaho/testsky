@@ -138,3 +138,19 @@ tiers:
 `);
   assert.deepEqual(config.tiers.ground.provider, { sort: "price" });
 });
+
+test("a models.yaml can ask OpenRouter to send back the thinking a model does", () => {
+  const config = routerConfigFromYaml(`
+tiers:
+  ground:
+    base_url: https://openrouter.ai/api/v1
+    model: anthropic/claude-haiku-5.5
+    reasoning:
+      enabled: true
+  reason:
+    base_url: https://openrouter.ai/api/v1
+    model: anthropic/claude-haiku-5.5
+`);
+  assert.deepEqual(config.tiers.ground.reasoning, { enabled: true });
+  assert.equal(config.tiers.reason?.reasoning, undefined, "nothing is asked for that the file does not say");
+});

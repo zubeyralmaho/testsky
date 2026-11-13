@@ -26,6 +26,10 @@ tiers:
     api_key_env: TESTSKY_REASON_KEY
     price_in_per_m: 0.75
     price_out_per_m: 3.75
+    # On OpenRouter (base_url https://openrouter.ai/api/v1) two more settings
+    # are sent as written; no other host is sent them:
+    # provider: { sort: price }      # keep the model on its cheapest host
+    # reasoning: { enabled: true }   # a model that thinks sends back what it thought, and the report shows it
 
   # Reads the wreckage of a failed run afterwards, never during one.
   triage:

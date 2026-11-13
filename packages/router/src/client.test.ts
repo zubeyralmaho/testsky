@@ -172,6 +172,30 @@ test("OpenRouter is sent the provider preferences a tier names, and who served t
   }
 });
 
+test("OpenRouter is sent the reasoning settings a tier names, and no other host is", async () => {
+  const sent: Record<string, unknown>[] = [];
+  const original = globalThis.fetch;
+  globalThis.fetch = (async (_url: string, init: { body: string }) => {
+    sent.push(JSON.parse(init.body) as Record<string, unknown>);
+    return new Response(JSON.stringify({ choices: [{ message: { content: "{}", reasoning: "it factors as 59 x 61" }, finish_reason: "stop" }] }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  }) as typeof globalThis.fetch;
+  try {
+    const { askVision } = await import("./client.ts");
+    const answer = await askVision({ baseUrl: "https://openrouter.ai/api/v1", model: "anthropic/claude-haiku-5.5", reasoning: { enabled: true } }, { system: "s", user: "u" }, 1);
+    assert.deepEqual(sent[0]!.reasoning, { enabled: true });
+    assert.equal(answer.reasoning, "it factors as 59 x 61");
+    await askVision({ baseUrl: "https://openrouter.ai/api/v1", model: "anthropic/claude-haiku-5.5" }, { system: "s", user: "u" }, 1);
+    assert.equal("reasoning" in sent[1]!, false, "a tier that names none asks for none");
+    await askVision({ baseUrl: "http://127.0.0.1:8000/v1", model: "m", reasoning: { enabled: true } }, { system: "s", user: "u" }, 1);
+    assert.equal("reasoning" in sent[2]!, false, "another host is not sent OpenRouter's parameter");
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
 test("a call that never answered is asked once more, and twice silent is a model error", async () => {
   const original = globalThis.fetch;
   let calls = 0;
