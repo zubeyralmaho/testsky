@@ -235,3 +235,25 @@ test("who found a target says when the model and the tree agreed, and when the t
   assert.match(html, /tree alone, the model found nothing/);
   assert.match(html, /4 actions: 1 from memory, 1 model and tree agreeing, 1 by a model \(1 with the tree\), 1 by the tree alone/);
 });
+
+test("each call folds out what it was asked, thought and answered, the tree apart and everything escaped", () => {
+  const tree = '[1] Button "<Pay>"';
+  const user = `Find "the Pay button".\n\nThe tree:\n${tree}\n\nAnswer exactly: {}`;
+  const asked: LedgerEntry = {
+    ...CALLS[0]!,
+    answer: '{"found": true, "point": [500, 908], "why": "the <blue> button"}',
+    reasoning: "One Pay button; the tree agrees.",
+    asked: { system: "You locate elements.", user, treeSpan: [user.indexOf(tree), user.indexOf(tree) + tree.length], image: "picture-1" },
+  };
+  const html = buildReport({ result: RESULT, events: EVENTS, calls: [asked, CALLS[1]!], meta: META, shots: { "picture-1": "UFVQ" } });
+  const rows = html.split('<tr class="conv">').slice(1);
+  assert.equal(rows.length, 1, "a call that kept nothing has nothing to fold out");
+  const [row] = rows;
+  assert.match(row!, /<img class="seen"[^>]*src="data:image\/webp;base64,UFVQ"/, "the picture it was shown");
+  assert.match(row!, /<summary>instructions<\/summary><pre>You locate elements\.<\/pre>/);
+  assert.match(row!, /<summary>accessibility tree · 1 lines<\/summary><pre>\[1\] Button &quot;&lt;Pay&gt;&quot;<\/pre>/, "the tree's own lines, apart");
+  assert.match(row!, /<pre>One Pay button; the tree agrees\.<\/pre>/);
+  assert.match(row!, /&quot;point&quot;: \[500, 908\]/, "the answer laid out, a list on one line");
+  assert.match(row!, /the &lt;blue&gt; button/);
+  assert.doesNotMatch(row!, /<blue>|<Pay>/);
+});

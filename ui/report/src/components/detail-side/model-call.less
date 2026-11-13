@@ -1,0 +1,186 @@
+@import (reference) '@testsky/look/look.less';
+
+// A model call and the tree's word, in Tesky's look: mono labels over plain
+// text, one line of facts, nothing padded that does not need to be. Not under
+// .detail-side: the wide view sits in a modal, outside the pane.
+.ts-call {
+  padding: 0 20px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--ts-text, inherit);
+
+  .ts-call-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .ts-call-facts {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .ts-call-open {
+    flex: none;
+    padding: 2px 4px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    cursor: pointer;
+    color: var(--ts-muted, #4b5463);
+
+    &:hover {
+      color: var(--ts-ice-text, #1677ff);
+      background: var(--ts-fill, rgba(0, 0, 0, 0.04));
+    }
+  }
+
+  .ts-call-part {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .ts-call-label {
+    .ts-eyebrow();
+  }
+
+  .ts-call-text {
+    margin: 0;
+    font-family: @ts-mono;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    padding: 8px 10px;
+    border-radius: 8px;
+    color: var(--ts-text, inherit);
+    background: var(--ts-fill, rgba(0, 0, 0, 0.04));
+    box-shadow: var(--ts-rim, none);
+  }
+
+  .ts-tree-lines {
+    max-height: 360px;
+    overflow: auto;
+    white-space: pre;
+    word-break: normal;
+  }
+
+  .ts-call-words {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .ts-call-none {
+    font-size: 12px;
+    color: var(--ts-dim, #8e95a1);
+  }
+
+  .ts-call-picture {
+    display: block;
+    align-self: flex-start;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: zoom-in;
+
+    img {
+      display: block;
+      max-height: 220px;
+      max-width: 100%;
+      border-radius: 8px;
+      box-shadow: var(--ts-rim, none);
+    }
+
+    &.is-large {
+      cursor: zoom-out;
+      align-self: stretch;
+
+      img {
+        max-height: none;
+        width: 100%;
+      }
+    }
+  }
+
+  .ts-fold {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .ts-fold-head {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    font-family: @ts-mono;
+    font-size: 12px;
+    color: var(--ts-muted, #4b5463);
+
+    .anticon {
+      font-size: 10px;
+    }
+
+    &:hover {
+      color: var(--ts-ice-text, #1677ff);
+    }
+  }
+}
+
+.ts-call-facts {
+  font-family: @ts-mono;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ts-dim, #8e95a1);
+}
+
+// The wide view: the picture the model saw beside everything it was told and said.
+.ts-call-modal {
+  .ant-modal-body {
+    max-height: 80vh;
+    overflow: auto;
+  }
+
+  .ts-call.ts-call-wide {
+    display: grid;
+    grid-template-columns: minmax(220px, 34%) 1fr;
+    align-items: start;
+    gap: 20px;
+    padding: 0;
+
+    &.no-picture {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .ts-call-seen {
+    position: sticky;
+    top: 0;
+
+    img {
+      display: block;
+      width: 100%;
+      max-height: 76vh;
+      object-fit: contain;
+      border-radius: 10px;
+      box-shadow: var(--ts-rim, none);
+    }
+  }
+
+  .ts-call-words-column {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .ts-tree-lines {
+    max-height: 50vh;
+  }
+}

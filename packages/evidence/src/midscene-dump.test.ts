@@ -4,7 +4,7 @@ import test from "node:test";
 import type { RunEvent, TestResult } from "@testsky/executor";
 import type { LedgerEntry } from "@testsky/router";
 
-import { buildMidsceneReport, inlineScreenshots, locateDump, toMidsceneDump } from "./midscene-dump.ts";
+import { buildMidsceneReport, type DumpCall, type DumpTask, inlineScreenshots, locateDump, toMidsceneDump } from "./midscene-dump.ts";
 
 const T0 = 1_700_000_000_000;
 const SCREEN = { width: 360, height: 800 };
@@ -69,6 +69,13 @@ const SHOTS = { "cart.action-1": "AAAA", "pay.action-1": "BBBB", cart: "CCCC", p
 
 const dumpOf = () => toMidsceneDump({ result: RESULT, events: EVENTS, calls: CALLS, meta: META, shots: SHOTS });
 
+/** What testsky says about a task beside its call, and the call. */
+const sourceOf = (task: DumpTask | undefined): Record<string, unknown> => {
+  const { call: _call, ...rest } = task?.testsky ?? {};
+  return rest;
+};
+const callIn = (task: DumpTask | undefined): DumpCall | undefined => task?.testsky?.call as DumpCall | undefined;
+
 test("a call with no event of its own shows what the model answered, and a judge that said no is not ticked", () => {
   const call = (purpose: LedgerEntry["purpose"], answer: string | undefined, at: number): LedgerEntry => ({
     at: T0 + at,
@@ -93,13 +100,20 @@ test("a call with no event of its own shows what the model answered, and a judge
   const [no, aimed, planned, garbled, unsaid] = tasks;
   assert.equal(no!.output, false);
   assert.equal(no!.thought, "only a progress line shows");
-  assert.deepEqual(no!.testsky, { shown: "vision", answer: '{"pass": false, "reason": "only a progress line shows"}' });
+  assert.deepEqual(no!.testsky, {
+    shown: "vision",
+    call: { purpose: "assert", model: "haiku", tier: 1, shown: "vision", latencyMs: 100, usd: 0, answer: '{"pass": false, "reason": "only a progress line shows"}' },
+  });
   assert.equal(aimed!.output, true);
   assert.equal(planned!.thought, "already there", "read through the words around the JSON");
   assert.equal(garbled!.output, undefined);
-  assert.equal(garbled!.testsky?.answer, "not json at all", "an answer that cannot be read is still there to read");
+  assert.equal(callIn(garbled)?.answer, "not json at all", "an answer that cannot be read is still there to read");
   assert.equal(unsaid!.output, undefined);
-  assert.deepEqual(unsaid!.testsky, { shown: "vision" }, "a report of a run from before answers were kept");
+  assert.deepEqual(
+    unsaid!.testsky,
+    { shown: "vision", call: { purpose: "assert", model: "haiku", tier: 1, shown: "vision", latencyMs: 100, usd: 0 } },
+    "a report of a run from before answers were kept",
+  );
 });
 
 test("each step is an execution, named for what it was asked to do", () => {
@@ -127,7 +141,8 @@ test("a model's action is the plan, the locate and the action Midscene would hav
     element: { center: [180, 726], rect: { left: 30, top: 700, width: 300, height: 52 }, description: "the Pay button" },
   });
   assert.equal(locate!.thought, "the blue Pay button");
-  assert.deepEqual(locate!.testsky, { shown: "fused", seen: "fused", confidence: 0.86, tree: '[6] Button "Pay"' });
+  assert.deepEqual(sourceOf(locate), { shown: "fused", seen: "fused", confidence: 0.86, tree: '[6] Button "Pay"' });
+  assert.equal(callIn(locate)?.purpose, "ground", "the call that answered rides on the locate");
   assert.deepEqual((tap!.param as { locate: { center: number[] } }).locate.center, [180, 726]);
   assert.equal(tap!.hitBy, undefined, "a model found this one");
 });
@@ -230,7 +245,7 @@ test("a target the tree held when the model found nothing is a locate with no us
   const [, asked, tree, tap] = pay.tasks;
   assert.equal(asked!.usage?.prompt_tokens, 3_400, "the model's look, paid for");
   assert.equal(asked!.output, undefined, "and finding nothing");
-  assert.deepEqual(asked!.testsky, { shown: "fused", answered: false });
+  assert.deepEqual(sourceOf(asked), { shown: "fused", answered: false });
   assert.equal(tree!.usage, undefined, "the tree spent nothing");
   assert.equal(tree!.thought, 'the tree has one Button called "Pay"; the model found nothing');
   assert.deepEqual((tree!.output as { element: { rect: unknown } }).element.rect, { left: 30, top: 700, width: 300, height: 52 });
@@ -252,7 +267,7 @@ test("a target the model and the tree agreed on says so on the locate that answe
   const pay = toMidsceneDump(input).dump.executions[1]!;
   const locates = pay.tasks.filter((task) => task.subType === "Locate");
   assert.equal(locates.length, 2);
-  assert.deepEqual(locates[0]!.testsky, { shown: "fused", answered: false }, "the first look was corrected");
+  assert.deepEqual(sourceOf(locates[0]), { shown: "fused", answered: false }, "the first look was corrected");
   assert.equal(locates[1]!.testsky?.by, "both");
   assert.equal(locates[1]!.usage?.model_name, "escalation");
   assert.equal(pay.tasks.find((task) => task.subType === "Tap")!.testsky?.by, "both");
@@ -309,9 +324,10 @@ test("a Locate the model and the tree agree on boxes the element on the answerin
   ]);
   assert.equal(tasks.some((task) => task.type === "Action Space"), false, "nothing was pressed");
   assert.equal(tasks[0]!.output, undefined, "the call a second look corrected answers nothing");
-  assert.deepEqual(tasks[0]!.testsky, { shown: "fused", answered: false });
+  assert.deepEqual(sourceOf(tasks[0]), { shown: "fused", answered: false });
   assert.deepEqual(tasks[1]!.output, { element: { center: [180, 300], rect: { left: 0, top: 270, width: 360, height: 60 }, description: "Wi-Fi" } });
-  assert.deepEqual(tasks[1]!.testsky, { shown: "fused", by: "both", confidence: 0.9 });
+  assert.deepEqual(sourceOf(tasks[1]), { shown: "fused", by: "both", confidence: 0.9 });
+  assert.equal(callIn(tasks[1])?.model, "second");
   assert.equal(tasks[1]!.thought, "the Wi-Fi row");
   assert.deepEqual(tasks[2]!.param, { content: 'The tree alone: Row "Wi-Fi" at (0,270 360x60) -- the tree has one Row called "Wi-Fi"' });
   assert.equal(tasks[2]!.recorder?.[0]?.screenshot.id, tasks[1]!.uiContext?.screenshot.id, "a note is replayed on the frame");
@@ -333,4 +349,93 @@ test("a Locate that would press nothing fails on the frame, with why", () => {
   assert.equal(tasks[1]!.errorMessage, "the model and the tree disagree");
   assert.ok(tasks[1]!.recorder?.[0]?.screenshot, "the failure is shown on the frame, not on black");
   assert.equal(dump.platform, "Android");
+});
+
+// ── The conversation itself ─────────────────────────────────────────────────
+
+const TREE_LINES = '[1] Window\n  [6] Button "Pay" (30,700 300x52)';
+const PROMPT = `Find this element in the screenshot: "the Pay button".\n\nThe screen's accessibility tree:\n${TREE_LINES}\n\nAnswer exactly: {...}`;
+const ASKED_GROUND: LedgerEntry = {
+  ...CALLS[1]!,
+  answer: '{"found": true, "point": [500, 908], "why": "the blue Pay button"}',
+  reasoning: "The tree names one Pay button at the bottom; the picture shows it there too.",
+  asked: {
+    system: "You locate elements on a phone screen.",
+    user: PROMPT,
+    treeSpan: [PROMPT.indexOf(TREE_LINES), PROMPT.indexOf(TREE_LINES) + TREE_LINES.length],
+    image: "picture-pay",
+  },
+};
+
+test("a call carries what it was asked, what it thought and what it said, on the picture it was shown", () => {
+  const ringed: LedgerEntry = {
+    at: T0 + 11_800,
+    purpose: "assert",
+    stepId: "pay",
+    tier: 1,
+    model: "haiku",
+    usd: 0.001,
+    latencyMs: 300,
+    usedTree: false,
+    channel: "vision",
+    answer: '{"onTarget": true, "reason": "the ring is on Pay"}',
+    asked: { system: "You check where an agent pressed.", user: "Is the ring on the thing the instruction names?", image: "picture-ring" },
+  };
+  const events = EVENTS.map((event) =>
+    event.kind === "action" && event.stepId === "pay" ? { ...event, data: { ...event.data, treeAnswer: 'the tree has one Button called "Pay"' } } : event,
+  );
+  // The ground call was shown the frame the action was decided on: one picture, carried once.
+  const input = {
+    result: RESULT,
+    events,
+    calls: [CALLS[0]!, ASKED_GROUND, ringed, CALLS[2]!],
+    meta: META,
+    shots: { ...SHOTS, "picture-pay": SHOTS["pay.action-1"], "picture-ring": "RRRR" },
+  };
+  const { dump, images } = toMidsceneDump(input);
+  const pay = dump.executions[1]!;
+  const locate = pay.tasks.find((task) => task.subType === "Locate")!;
+  const call = callIn(locate)!;
+  assert.equal(call.system, "You locate elements on a phone screen.");
+  assert.equal(call.prompt, PROMPT);
+  assert.equal(call.prompt!.slice(...call.treeSpan!), TREE_LINES, "the tree's lines, found in the question as it was sent");
+  assert.equal(call.thinking, "The tree names one Pay button at the bottom; the picture shows it there too.");
+  assert.equal(call.answer, '{"found": true, "point": [500, 908], "why": "the blue Pay button"}');
+  assert.equal(call.picture?.id, locate.uiContext?.screenshot.id, "the picture it was shown is the frame the action was decided on");
+  assert.equal(Object.values(images).filter((uri) => uri.endsWith(SHOTS["pay.action-1"])).length, 1, "and is carried once");
+  assert.equal(sourceOf(locate).treeAnswer, 'the tree has one Button called "Pay"', "the tree's own answer, beside the model's");
+
+  // The aim check was shown the frame with the ring on it, and is shown on it.
+  const aim = pay.tasks.find((task) => callIn(task)?.answer?.includes("onTarget"))!;
+  assert.equal(images[aim.uiContext!.screenshot.id], "data:image/jpeg;base64,RRRR");
+  assert.equal(callIn(aim)?.picture?.id, aim.uiContext?.screenshot.id);
+
+  // In the viewer, where every reference becomes its picture.
+  const inlined = inlineScreenshots(dump, images);
+  const shown = inlined.executions[1]!.tasks.find((task) => task.subType === "Locate")!.testsky!.call as { picture: { base64: string } };
+  assert.equal(shown.picture.base64, `data:image/jpeg;base64,${SHOTS["pay.action-1"]}`);
+});
+
+test("every look a check took is shown, not only the one its verdict came from", () => {
+  const first: LedgerEntry = { ...CALLS[2]!, at: T0 + 26_000, model: "haiku", answer: '{"pass": true, "reason": "a number shows"}' };
+  const strict: LedgerEntry = { ...CALLS[2]!, answer: '{"pass": false, "reason": "the number is the cart total, not an order number"}' };
+  const pay = toMidsceneDump({ result: RESULT, events: EVENTS, calls: [...CALLS.slice(0, 2), first, strict], meta: META, shots: SHOTS }).dump.executions[1]!;
+  const asserts = pay.tasks.filter((task) => task.subType === "Assert");
+  assert.equal(asserts.length, 2);
+  assert.equal(asserts[0]!.subTask, true, "the first look, overruled");
+  assert.equal(callIn(asserts[0])?.model, "haiku");
+  assert.equal(callIn(asserts[1])?.model, "judge", "the verdict's own look");
+  assert.equal(asserts[1]!.output, false);
+});
+
+test("a playground Locate shows each call's picture, the frame itself carried once", () => {
+  const { dump, images } = locateDump({
+    ...LOCATE,
+    calls: [{ ...GROUND(T0 + 1_000, "first"), asked: { system: "s", user: "u", image: "picture-frame" } }],
+    pictures: { "picture-frame": LOCATE.shot },
+    found: { point: { x: 180, y: 300 }, foundBy: "model" },
+  });
+  const [task] = dump.executions[0]!.tasks;
+  assert.equal(callIn(task)?.picture?.id, task!.uiContext?.screenshot.id);
+  assert.equal(Object.keys(images).length, 1);
 });

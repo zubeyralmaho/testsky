@@ -25,6 +25,7 @@ import {
 import { Tag, Tooltip } from 'antd';
 import { useState } from 'react';
 import { isElementField, useExecutionDump } from '../store';
+import { ModelCall, type ReportCall, TreeSide } from './model-call';
 
 function isPlainObject(value: unknown): value is Record<string, any> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -493,84 +494,98 @@ const DetailSide = ({ onClose }: { onClose?: () => void }): JSX.Element => {
     tree: 'tree only',
     fused: 'screenshot + tree',
   };
-  const sourceKV =
-    source && Object.keys(source).length
-      ? MetaKV({
-          data: [
-            ...(source.by
-              ? [
-                  {
-                    key: 'found by',
-                    content:
-                      source.by === 'memory'
-                        ? `memory of an earlier run${
-                            source.checkedBy
-                              ? `, checked against the ${source.checkedBy}`
-                              : ''
-                          }`
-                        : source.by === 'both'
-                          ? "the model and the accessibility tree, agreeing -- the tree's box is used"
-                          : source.by === 'tree'
-                            ? 'the accessibility tree, after the model found nothing'
-                            : 'a model',
-                  },
-                ]
-              : []),
-            // A target the tree named was shown to nothing: it was read.
-            ...(source.by !== 'tree' &&
-            typeof (source.seen ?? source.shown) === 'string'
-              ? [
-                  {
-                    key: 'shown',
-                    content:
-                      SHOWN[String(source.seen ?? source.shown)] ??
-                      String(source.seen ?? source.shown),
-                  },
-                ]
-              : []),
-            ...(source.answered === false
-              ? [
-                  {
-                    key: 'answer',
-                    content: 'not the one used -- it found nothing, or a second look corrected it',
-                  },
-                ]
-              : []),
-            ...(typeof source.confidence === 'number'
-              ? [{ key: 'confidence', content: source.confidence.toFixed(2) }]
-              : []),
-            ...(typeof source.moved === 'boolean'
-              ? [
-                  {
-                    key: 'screen changed',
-                    content: source.moved ? 'yes' : 'no -- nothing moved',
-                  },
-                ]
-              : []),
-            ...(Array.isArray(source.treeSaid) && source.treeSaid.length
-              ? [
-                  {
-                    key: 'the tree said',
-                    content: `${(source.treeSaid as string[]).join('; ')} -- a second look was told so`,
-                  },
-                ]
-              : []),
-            ...(source.remembered
-              ? [
-                  {
-                    key: 'verdict',
-                    content: 'remembered: the screen was exactly as when it last held',
-                  },
-                ]
-              : []),
-          ],
-        })
-      : null;
-  const sourceTree =
-    typeof source?.tree === 'string' ? (
-      <CollapsibleCard
-        title={source.by === 'tree' ? 'the tree it was read from' : 'the tree it was shown'}
-        content={source.tree}
+  // The call this task is, whole; its own line says what it was shown.
+  const reportCall = source?.call as ReportCall | undefined;
+  const sourceRows = source
+    ? [
+        ...(source.by
+          ? [
+              {
+                key: 'found by',
+                content:
+                  source.by === 'memory'
+                    ? `memory of an earlier run${
+                        source.checkedBy
+                          ? `, checked against the ${source.checkedBy}`
+                          : ''
+                      }`
+                    : source.by === 'both'
+                      ? "the model and the accessibility tree, agreeing -- the tree's box is used"
+                      : source.by === 'tree'
+                        ? 'the accessibility tree, after the model found nothing'
+                        : 'a model',
+              },
+            ]
+          : []),
+        // A target the tree named was shown to nothing: it was read.
+        ...(source.by !== 'tree' &&
+        !reportCall &&
+        typeof (source.seen ?? source.shown) === 'string'
+          ? [
+              {
+                key: 'shown',
+                content:
+                  SHOWN[String(source.seen ?? source.shown)] ??
+                  String(source.seen ?? source.shown),
+              },
+            ]
+          : []),
+        ...(source.answered === false
+          ? [
+              {
+                key: 'answer',
+                content: 'not the one used -- it found nothing, or a second look corrected it',
+              },
+            ]
+          : []),
+        ...(typeof source.confidence === 'number'
+          ? [{ key: 'confidence', content: source.confidence.toFixed(2) }]
+          : []),
+        ...(typeof source.moved === 'boolean'
+          ? [
+              {
+                key: 'screen changed',
+                content: source.moved ? 'yes' : 'no -- nothing moved',
+              },
+            ]
+          : []),
+        ...(source.remembered
+          ? [
+              {
+                key: 'verdict',
+                content: 'remembered: the screen was exactly as when it last held',
+              },
+            ]
+          : []),
+      ]
+    : [];
+  const sourceKV = sourceRows.length ? MetaKV({ data: sourceRows }) : null;
+  // What the tree said on its own, and the lines it was read from -- not
+  // again when they are the lines the model's question carried.
+  const callTree =
+    reportCall?.prompt && reportCall.treeSpan
+      ? reportCall.prompt.slice(reportCall.treeSpan[0], reportCall.treeSpan[1])
+      : undefined;
+  const treeLines =
+    typeof source?.tree === 'string' && source.tree !== callTree
+      ? source.tree
+      : undefined;
+  const treeAnswer =
+    typeof source?.treeAnswer === 'string' ? source.treeAnswer : undefined;
+  const treeSaid = Array.isArray(source?.treeSaid)
+    ? (source.treeSaid as string[])
+    : undefined;
+  const treeSide =
+    treeAnswer || treeSaid?.length || treeLines ? (
+      <TreeSide
+        answer={treeAnswer}
+        said={treeSaid}
+        lines={treeLines}
+        linesTitle={
+          source?.by === 'tree'
+            ? 'the tree it was read from'
+            : 'the tree it was shown'
+        }
       />
     ) : null;
 
@@ -1222,13 +1237,28 @@ const DetailSide = ({ onClose }: { onClose?: () => void }): JSX.Element => {
             <div className="item-list">{outputDataContent}</div>
           </details>
         )}
-        {(sourceKV || sourceTree) && (
+        {reportCall && (
+          <details open>
+            <summary>
+              <span className="summary-text">Model call</span>
+            </summary>
+            <ModelCall call={reportCall} />
+          </details>
+        )}
+        {treeSide && (
+          <details open>
+            <summary>
+              <span className="summary-text">Tree</span>
+            </summary>
+            {treeSide}
+          </details>
+        )}
+        {sourceKV && (
           <details open>
             <summary>
               <span className="summary-text">Source</span>
             </summary>
             {sourceKV}
-            {sourceTree && <div className="item-list">{sourceTree}</div>}
           </details>
         )}
         <details open>

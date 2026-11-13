@@ -17,7 +17,7 @@ import type { AddressInfo } from "node:net";
 
 import type { DeviceHandle, Engine, GroundResult } from "@testsky/engine-core";
 import { inlineScreenshots, locateDump, toMidsceneDump } from "@testsky/evidence";
-import { boxWords, StepSession, type SavedStep, type StepBody } from "@testsky/harness";
+import { boxWords, reportImages, StepSession, type SavedStep, type StepBody } from "@testsky/harness";
 import { toJpeg } from "@testsky/perception";
 import type { CostLedger } from "@testsky/router";
 
@@ -181,13 +181,16 @@ export async function startPlayground(options: PlaygroundOptions): Promise<Playg
   const locate = async (description: string): Promise<ExecuteResponse> => {
     const located = await session.locate(description);
     const { observation, found, refused, tree } = located;
+    // The frame, and the pictures its calls were shown: the frame itself, as often as not.
+    const pictures = await reportImages(new Map([["frame", observation.frame.bytes]]), located.pictures, toJpeg);
     const { dump, images } = locateDump({
       description,
       meta: { platform: device.platform, device: device.id },
-      shot: (await toJpeg(observation.frame.bytes)).toString("base64"),
+      shot: pictures.frame!,
       size: observation.frame.size,
       at: observation.frame.capturedAt,
       calls: located.calls,
+      pictures,
       ...(found
         ? {
             found: {
@@ -254,9 +257,8 @@ export async function startPlayground(options: PlaygroundOptions): Promise<Playg
   /** An instruction run, and its replay made. */
   const ran = async (step: StepBody, title: string): Promise<ExecuteResponse> => {
     const tried = await session.attempt(step, title);
-    const jpegs = Object.fromEntries(
-      await Promise.all([...tried.shots].map(async ([id, bytes]) => [id, (await toJpeg(bytes)).toString("base64")] as const)),
-    );
+    // The frames it kept, and the pictures its calls were shown, by their ids.
+    const jpegs = await reportImages(tried.shots, tried.pictures, toJpeg);
     const { dump, images } = toMidsceneDump({
       result: tried.result,
       events: tried.events,

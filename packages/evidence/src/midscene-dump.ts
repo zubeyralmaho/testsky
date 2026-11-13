@@ -39,6 +39,34 @@ interface Usage {
   intent: string;
 }
 
+/**
+ * One model call, whole: what it was asked -- the instructions, the question
+ * with the tree in it, the picture -- what it thought, and what it answered.
+ * Midscene keeps a call's usage and its parsed result; a reader asking why a
+ * run went as it did needs the conversation.
+ */
+export interface DumpCall {
+  purpose: LedgerEntry["purpose"];
+  model?: string;
+  provider?: string;
+  tier: number;
+  /** What it was shown: the picture, the tree, or both. */
+  shown: LedgerEntry["channel"];
+  latencyMs: number;
+  tokensIn?: number;
+  tokensOut?: number;
+  usd: number;
+  system?: string;
+  prompt?: string;
+  /** Where in `prompt` the tree's lines are, [from, to). */
+  treeSpan?: [number, number];
+  /** The picture it was shown, when the report kept it. */
+  picture?: ScreenshotRef;
+  /** What it thought before answering, when its host sent that back. */
+  thinking?: string;
+  answer?: string;
+}
+
 export interface DumpTask {
   taskId: string;
   type: "Planning" | "Insight" | "Action Space" | "Log";
@@ -148,7 +176,25 @@ function instructionOf(step: { stepId: string }, events: RunEvent[]): string {
   return started?.message || step.stepId;
 }
 
-const answerOf = (call: LedgerEntry): { answer?: string } => (call.answer === undefined ? {} : { answer: call.answer });
+/** A call as the report shows it; its picture, when the report kept that, is given by the caller. */
+function callOf(call: LedgerEntry, picture: ScreenshotRef | undefined): DumpCall {
+  return {
+    purpose: call.purpose,
+    ...(call.model ? { model: call.model } : {}),
+    ...(call.provider ? { provider: call.provider } : {}),
+    tier: call.tier,
+    shown: call.channel,
+    latencyMs: call.latencyMs,
+    ...(call.tokensIn !== undefined ? { tokensIn: call.tokensIn } : {}),
+    ...(call.tokensOut !== undefined ? { tokensOut: call.tokensOut } : {}),
+    usd: call.usd,
+    ...(call.asked ? { system: call.asked.system, prompt: call.asked.user } : {}),
+    ...(call.asked?.treeSpan ? { treeSpan: call.asked.treeSpan } : {}),
+    ...(picture ? { picture } : {}),
+    ...(call.reasoning ? { thinking: call.reasoning } : {}),
+    ...(call.answer !== undefined ? { answer: call.answer } : {}),
+  };
+}
 
 /** A call's verdict and its reason, from what the model answered. An answer that cannot be read is still there to read as it came. */
 function saidIn(call: LedgerEntry): { verdict?: boolean; reason?: string } {
@@ -182,12 +228,22 @@ export function toMidsceneDump(
   const images: Record<string, string> = {};
   const shots = input.shots ?? {};
 
+  // A picture is carried once: the frame an action was decided on is, as
+  // often as not, the very picture its calls were shown.
+  const idOf = new Map<string, string>();
   const ref = (shotId: string | undefined, at: number): ScreenshotRef | undefined => {
-    if (!shotId || !shots[shotId]) return undefined;
-    const id = imageId(shotId);
-    images[id] = `data:${mimeType};base64,${shots[shotId]}`;
+    const data = shotId ? shots[shotId] : undefined;
+    if (!shotId || !data) return undefined;
+    let id = idOf.get(data);
+    if (!id) {
+      id = imageId(shotId);
+      idOf.set(data, id);
+      images[id] = `data:${mimeType};base64,${data}`;
+    }
     return { type: "midscene_screenshot_ref", id, capturedAt: at, mimeType, storage: "inline" };
   };
+  /** The picture a call was shown, when the report kept it. */
+  const pictureOf = (call: LedgerEntry): ScreenshotRef | undefined => ref(call.asked?.image, call.at - call.latencyMs);
 
   // A frame is placed by the screen it was taken of. Steps that never acted
   // say nothing about the screen, so they borrow the nearest size the run knows.
@@ -215,9 +271,16 @@ export function toMidsceneDump(
       return taken;
     };
 
-    /** A model call with no event of its own: a plan that ended the step, a judge asked again while a wait went on. What it said is all there is to show. */
+    /**
+     * A model call as a task of its own: a plan, a locate, a judge asked again
+     * while a wait went on. Shown on the picture the model was shown, when
+     * there was one -- an aim check's has the ring drawn on it -- and with the
+     * whole call beside it: what it was asked, what it thought, what it said.
+     */
     const callTask = (call: LedgerEntry, ui: UiContext | undefined): DumpTask => {
       const { verdict, reason } = saidIn(call);
+      const picture = pictureOf(call);
+      const seen = context(picture) ?? ui;
       return {
         taskId: nextId(),
         type: call.purpose === "plan" ? "Planning" : call.purpose === "ground" ? "Planning" : "Insight",
@@ -228,9 +291,9 @@ export function toMidsceneDump(
         ...(verdict !== undefined ? { output: verdict } : {}),
         ...(reason ? { thought: reason } : {}),
         usage: usageOf(call),
-        ...(ui ? { uiContext: ui } : {}),
+        ...(seen ? { uiContext: seen } : {}),
         timing: timing(call.at - call.latencyMs, call.at),
-        testsky: { shown: call.channel, ...answerOf(call) },
+        testsky: { shown: call.channel, call: callOf(call, picture) },
       };
     };
 
@@ -270,7 +333,7 @@ export function toMidsceneDump(
             // second look then corrected.
             task.param = { prompt: description };
             task.subTask = true;
-            task.testsky = { shown: call.channel, answered: false, ...answerOf(call) };
+            task.testsky = { ...task.testsky, answered: false };
           } else if (call.purpose === "ground") {
             task.param = { prompt: description };
             task.subTask = true;
@@ -287,12 +350,12 @@ export function toMidsceneDump(
               };
             }
             task.testsky = {
-              shown: call.channel,
+              ...task.testsky,
               ...(data.by === "both" ? { by: "both" } : {}),
               ...(typeof data.seen === "string" ? { seen: data.seen } : {}),
               ...(num(data.confidence) !== undefined ? { confidence: data.confidence } : {}),
               ...(typeof data.tree === "string" ? { tree: data.tree } : {}),
-              ...answerOf(call),
+              ...(typeof data.treeAnswer === "string" ? { treeAnswer: data.treeAnswer } : {}),
             };
           }
           tasks.push(task);
@@ -327,6 +390,7 @@ export function toMidsceneDump(
               seen: "tree",
               ...(num(data.confidence) !== undefined ? { confidence: data.confidence } : {}),
               ...(typeof data.tree === "string" ? { tree: data.tree } : {}),
+              ...(typeof data.treeAnswer === "string" ? { treeAnswer: data.treeAnswer } : {}),
             },
           });
         }
@@ -365,13 +429,20 @@ export function toMidsceneDump(
 
       if (event.kind === "assertion") {
         const made = callsUntil(event.at);
-        const judged = made.filter((call) => call.purpose === "assert");
-        for (const call of made.filter((call) => call.purpose !== "assert")) tasks.push(callTask(call, undefined));
+        const call = made.filter((each) => each.purpose === "assert").at(-1);
+        // Every look before the verdict's own, in order: a first look a
+        // stricter one overruled, a judge asked again while a wait went on.
+        for (const each of made) {
+          if (each === call) continue;
+          const task = callTask(each, undefined);
+          if (each.purpose === "assert") task.subTask = true;
+          tasks.push(task);
+        }
         const held = /^held/.test(event.message);
         const last = own.filter((other) => other.kind === "assertion").at(-1) === event;
-        const verdictFrame = last ? context(ref(step.stepId, event.at)) : undefined;
+        const picture = call ? pictureOf(call) : undefined;
+        const verdictFrame = last ? context(ref(step.stepId, event.at)) : context(picture);
         const expectation = event.message.replace(/^[^:]*:\s*/, "");
-        const call = judged.at(-1);
         tasks.push({
           taskId: nextId(),
           type: "Insight",
@@ -386,7 +457,7 @@ export function toMidsceneDump(
           timing: timing(call ? call.at - call.latencyMs : cursor, event.at),
           testsky: {
             ...(data.remembered === true ? { remembered: true } : {}),
-            ...(call ? { shown: call.channel, ...answerOf(call) } : {}),
+            ...(call ? { shown: call.channel, call: callOf(call, picture) } : {}),
             ...(Array.isArray(data.treeSaid) ? { treeSaid: data.treeSaid } : {}),
           },
         });
@@ -464,6 +535,8 @@ export interface LocateInput {
   at: number;
   /** The model calls the locate made, in order. */
   calls: LedgerEntry[];
+  /** The pictures those calls were shown, base64 of the dump's image type, by their ids. */
+  pictures?: Record<string, string>;
   /** Where a step's tap would land, who found it and why; absent when nothing would be pressed. */
   found?: { point: { x: number; y: number }; rect?: Box; foundBy?: string; why?: string; confidence?: number };
   /** Why nothing would be pressed. */
@@ -481,8 +554,16 @@ export interface LocateInput {
 export function locateDump(input: LocateInput, mimeType: ScreenshotMime = "image/jpeg"): { dump: MidsceneDump; images: Record<string, string> } {
   const { description, found } = input;
   const id = imageId(`locate-${input.at}`);
-  const images = { [id]: `data:${mimeType};base64,${input.shot}` };
+  const images: Record<string, string> = { [id]: `data:${mimeType};base64,${input.shot}` };
   const screenshot: ScreenshotRef = { type: "midscene_screenshot_ref", id, capturedAt: input.at, mimeType, storage: "inline" };
+  // A call's picture is, as often as not, the frame itself: carried once.
+  const pictureOf = (call: LedgerEntry): ScreenshotRef | undefined => {
+    const data = call.asked?.image ? input.pictures?.[call.asked.image] : undefined;
+    if (!call.asked?.image || !data) return undefined;
+    const same = data === input.shot ? id : imageId(call.asked.image);
+    images[same] ??= `data:${mimeType};base64,${data}`;
+    return { type: "midscene_screenshot_ref", id: same, capturedAt: call.at - call.latencyMs, mimeType, storage: "inline" };
+  };
   const ui: UiContext = { size: { ...input.size, dpr: 1 }, shotSize: input.size, screenshot };
   // A note is replayed on the frame its recorder holds; without one the player shows black.
   const recorder = [{ type: "screenshot" as const, ts: input.at, screenshot, timing: "after-calling" }];
@@ -522,7 +603,11 @@ export function locateDump(input: LocateInput, mimeType: ScreenshotMime = "image
       usage: usageOf(call),
       uiContext: ui,
       timing: timing(call.at - call.latencyMs, call.at),
-      testsky: call === answering ? { shown: call.channel, ...who } : { shown: call.channel, answered: false },
+      testsky: {
+        shown: call.channel,
+        ...(call === answering ? who : { answered: false }),
+        call: callOf(call, pictureOf(call)),
+      },
     });
   }
   if (found && !answering) {

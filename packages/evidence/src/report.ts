@@ -194,6 +194,67 @@ function actionList(events: RunEvent[], shots: Record<string, string> | undefine
     .join("")}</ol>`;
 }
 
+/** JSON laid out to be read: an object a key a line, a list of plain values on one line. */
+function layJson(value: unknown, indent = ""): string {
+  if (Array.isArray(value)) {
+    if (value.every((each) => each === null || typeof each !== "object")) return `[${value.map((each) => JSON.stringify(each)).join(", ")}]`;
+    const inner = `${indent}  `;
+    return `[\n${value.map((each) => `${inner}${layJson(each, inner)}`).join(",\n")}\n${indent}]`;
+  }
+  if (value !== null && typeof value === "object") {
+    const entries = Object.entries(value);
+    if (!entries.length) return "{}";
+    const inner = `${indent}  `;
+    return `{\n${entries.map(([key, each]) => `${inner}${JSON.stringify(key)}: ${layJson(each, inner)}`).join(",\n")}\n${indent}}`;
+  }
+  return JSON.stringify(value);
+}
+
+/** An answer as it reads best: its JSON laid out, any words around it kept; else as it came. */
+export function prettyAnswer(answer: string): string {
+  const text = answer.replace(/^\s*<think>[\s\S]*?<\/think>\s*/i, "");
+  const unfenced = text.replace(/```(?:json)?/gi, "");
+  const start = unfenced.indexOf("{");
+  const end = unfenced.lastIndexOf("}");
+  if (start === -1 || end <= start) return text;
+  try {
+    const laid = layJson(JSON.parse(unfenced.slice(start, end + 1)));
+    const around = `${unfenced.slice(0, start)}${unfenced.slice(end + 1)}`.trim();
+    return around ? `${around}\n\n${laid}` : laid;
+  } catch {
+    return text;
+  }
+}
+
+/**
+ * A call's conversation, folded under its row: the picture it was shown, its
+ * instructions, its question with the tree lines apart, what it thought and
+ * what it answered. Nothing at all for a call that kept none of it.
+ */
+function conversation(call: LedgerEntry, shots: Record<string, string> | undefined): string {
+  const asked = call.asked;
+  if (!asked && call.answer === undefined && !call.reasoning) return "";
+  const span = asked?.treeSpan && asked.treeSpan[1] <= asked.user.length ? asked.treeSpan : undefined;
+  const before = asked ? (span ? asked.user.slice(0, span[0]).replace(/\n+$/, "") : asked.user) : "";
+  const tree = asked && span ? asked.user.slice(span[0], span[1]) : "";
+  const after = asked && span ? asked.user.slice(span[1]).replace(/^\n+/, "") : "";
+  const picture = asked?.image ? shots?.[asked.image] : undefined;
+  return `<tr class="conv"><td colspan="8"><details><summary>asked · thought · answered</summary><div class="conv-body">${
+    picture ? `<img class="seen" loading="lazy" src="data:image/webp;base64,${picture}" alt="the picture it was shown">` : ""
+  }<div class="conv-words">${
+    asked
+      ? `<details class="tree"><summary>instructions</summary><pre>${escape(asked.system)}</pre></details>` +
+        (before ? `<pre>${escape(before)}</pre>` : "") +
+        (tree ? `<details class="tree"><summary>accessibility tree · ${tree.split("\n").length} lines</summary><pre>${escape(tree)}</pre></details>` : "") +
+        (after ? `<pre>${escape(after)}</pre>` : "")
+      : `<p class="muted">the question was not kept</p>`
+  }<p class="label">thought</p>${
+    call.reasoning ? `<pre>${escape(call.reasoning)}</pre>` : `<p class="muted">its host sent no thinking back</p>`
+  }<p class="label">answered</p>${
+    call.answer === undefined ? `<p class="muted">not kept</p>` : `<pre>${escape(prettyAnswer(call.answer))}</pre>`
+  }</div></div></details></td></tr>`;
+}
+
 export function buildReport(input: ReportInput): string {
   const { result, events, calls, meta } = input;
   // Frame zero if there is a video, the run's own start if there is not.
@@ -312,7 +373,7 @@ export function buildReport(input: ReportInput): string {
         <td>${escape(call.stepId ?? "")}</td><td>${escape(call.purpose)}</td><td>${escape(SHOWN[call.channel] ?? "")}</td><td>tier ${call.tier}</td>
         <td>${escape(call.model ?? "")}</td><td class="num">${call.latencyMs}ms</td>
         <td class="num">${call.tokensIn ?? ""}</td><td class="num">${call.usd > 0 ? `$${call.usd.toFixed(4)}` : ""}</td>
-      </tr>`,
+      </tr>${conversation(call, input.shots)}`,
     )
     .join("");
 
@@ -383,6 +444,15 @@ export function buildReport(input: ReportInput): string {
   th, td { text-align:left; padding:4px 8px; border-bottom:1px solid #cbd5e133; }
   .num { text-align:right; font-variant-numeric:tabular-nums; }
   .panel { background:#fff; border-radius:12px; padding:14px 16px; }
+  .conv > td { padding-top:0; }
+  .conv summary { cursor:pointer; color:#64748b; }
+  .conv-body { display:flex; gap:12px; align-items:flex-start; margin:6px 0 8px; }
+  .conv-body .seen { width:180px; flex:none; border-radius:8px; box-shadow:0 0 0 1px #64748b33; }
+  .conv-words { flex:1; min-width:0; }
+  .conv pre { margin:4px 0; padding:6px 8px; border-radius:8px; background:#64748b14; max-height:320px; overflow:auto;
+    font:11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; white-space:pre-wrap; word-break:break-word; }
+  .conv .label { margin:8px 0 0; color:#64748b; font-size:11px; text-transform:uppercase; letter-spacing:.06em; }
+  .conv p.muted { margin:4px 0; }
 </style></head>
 <body>
 <header class="top">
@@ -413,7 +483,7 @@ export function buildReport(input: ReportInput): string {
     ${beforeSteps}
     ${stepCards}
     <div class="panel">
-      <strong>What each model call cost</strong>
+      <strong>Each model call: what it cost, and what it was asked, thought and answered</strong>
       <table><thead><tr><th>step</th><th>purpose</th><th>shown</th><th>tier</th><th>model</th><th class="num">latency</th><th class="num">tokens in</th><th class="num">cost</th></tr></thead>
       <tbody>${callRows}</tbody></table>
     </div>
