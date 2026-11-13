@@ -9,9 +9,9 @@ const android = (id: string): DeviceHandle => ({ id, platform: "android", osVers
 const serials: Record<string, string> = { R58M1234: "R58M1234", "192.168.1.5:5555": "R58M1234", "emulator-5554": "EMULATOR" };
 
 test("an iPhone's id is found in either case, and an Android serial only as it is", () => {
-  const iphone: DeviceHandle = { id: "BB1C7CC277ADC5E942F9E4346B1D7707C611971E", platform: "ios", osVersion: "", kind: "physical" };
-  assert.equal(matchDevice([iphone], "bb1c7cc277adc5e942f9e4346b1d7707c611971e"), iphone);
-  assert.equal(matchDevice([iphone], "bb1c7cc2"), iphone, "by its start too");
+  const iphone: DeviceHandle = { id: "A1B2C3D4E5F60718293A4B5C6D7E8F9012345678", platform: "ios", osVersion: "", kind: "physical" };
+  assert.equal(matchDevice([iphone], "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"), iphone);
+  assert.equal(matchDevice([iphone], "a1b2c3d4"), iphone, "by its start too");
   assert.equal(matchDevice([android("R58M1234")], "r58m1234"), undefined);
   assert.deepEqual(matchDevice([android("R58M1234")], "R58M"), android("R58M1234"));
 });
@@ -63,9 +63,9 @@ test("a phone another program is at work on is said to be in use, by program and
 
 test("an MCP server is not at work on the phones it may use: it holds one only by the lease, and its runs name the phone themselves", () => {
   const ps = [
-    "  201    20:46 /Users/runner/node22/bin/node apps/cli/src/main.ts mcp --devices 00008030-001A2B3C4D5E6F70,QV7701XYZW --out /Users/runner/runs",
+    "  201    20:46 /usr/local/bin/node apps/cli/src/main.ts mcp --devices 00008030-001A2B3C4D5E6F70,QV7701XYZW --out runs",
     "  202    11:39 testsky mcp --devices QV7701XYZW",
-    "  203    00:12 /Users/runner/node22/bin/node /Users/runner/testsky/apps/cli/src/main.ts run --json checkout.testsky.yaml --devices QV7701XYZW",
+    "  203    00:12 /usr/local/bin/node /opt/testsky/apps/cli/src/main.ts run --json checkout.testsky.yaml --devices QV7701XYZW",
   ].join("\n");
   assert.deepEqual(othersUsing(ps, ["QV7701XYZW"], new Set()), ["pid 203 (node src/main.ts, running 00:12)"]);
   assert.deepEqual(othersUsing(ps, ["00008030-001A2B3C4D5E6F70"], new Set()), []);
