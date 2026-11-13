@@ -1,0 +1,10 @@
+id: bench-calendar-month
+title: Calendar opens on a dated view
+targets:
+  - { platform: ios, app: com.apple.mobilecal }
+policy: { runs: 1, pass_threshold: 1, budget: { max_steps: 12, max_usd: 0.20, max_seconds: 240 } }
+setup: [launch app]
+steps:
+  - id: dates
+    expect: a calendar is visible, showing days of a month or a list of dates
+teardown: [terminate app]

@@ -1,0 +1,17 @@
+{
+  "name": "@testsky/harness",
+  "version": "0.0.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@testsky/artifact": "workspace:*",
+    "@testsky/engine-core": "workspace:*",
+    "@testsky/engine-midscene": "workspace:*",
+    "@testsky/evidence": "workspace:*",
+    "@testsky/executor": "workspace:*",
+    "@testsky/perception": "workspace:*",
+    "@testsky/router": "workspace:*"
+  }
+}

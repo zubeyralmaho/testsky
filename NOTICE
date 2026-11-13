@@ -1,0 +1,34 @@
+testsky
+Copyright 2026 Zübeyr Almaho
+
+Licensed under the Apache License, Version 2.0; see LICENSE. ui/report,
+ui/visualizer and ui/playground are derived from Midscene and stay under
+its MIT License; each of them carries that LICENSE.
+
+The testsky and Tesky names and logos are not licensed under either license:
+the images in assets/brand, and the logo and favicon images in
+ui/report/src/assets and ui/playground/src/assets.
+
+testsky bundles and depends on third-party open-source software.
+
+Midscene (https://github.com/web-infra-dev/midscene)
+  Copyright (c) 2024-present Bytedance, Inc. and its affiliates.
+  Licensed under the MIT License.
+  ui/report and ui/visualizer are Midscene's apps/report and
+  packages/visualizer at v1.15.4 (96ce5dd), modified by testsky; a diff
+  against that version shows how. ui/playground takes its layout and styles
+  from Midscene's packages/playground-app at the same version. Each of these
+  directories carries Midscene's LICENSE.
+
+scrcpy server (https://github.com/Genymobile/scrcpy) - Apache License 2.0
+WebDriverAgent (https://github.com/appium/WebDriverAgent) - Apache License 2.0
+appium-adb (https://github.com/appium/appium-adb) - Apache License 2.0
+
+Fonts inlined into the report and playground pages, each under the SIL Open
+Font License, Version 1.1:
+Geist and Geist Mono (https://github.com/vercel/geist-font)
+  Copyright 2024 The Geist Project Authors
+Instrument Serif (https://github.com/Instrument/instrument-serif)
+  Copyright 2022 The Instrument Serif Project Authors
+Inter (https://github.com/rsms/inter), ui/report's InterVariable.woff2
+  Copyright 2016 The Inter Project Authors; its license file is beside it

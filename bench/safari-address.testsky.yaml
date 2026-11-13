@@ -1,0 +1,13 @@
+id: bench-safari-address
+title: Safari's address bar takes a query
+targets:
+  - { platform: ios, app: com.apple.mobilesafari }
+policy: { runs: 1, pass_threshold: 1, budget: { max_steps: 12, max_usd: 0.20, max_seconds: 240 } }
+setup: [launch app]
+steps:
+  - id: chrome
+    expect: a web browser is open, with an address or search field visible
+  - id: focus
+    do: tap the address field at the bottom of the screen
+    expect: the address field is focused and a keyboard is visible
+teardown: [terminate app]

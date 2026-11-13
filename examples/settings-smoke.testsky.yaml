@@ -1,0 +1,45 @@
+# One file, both platforms. It opens Settings, moves around, opens a section
+# and comes back -- changing no setting, so it is safe to point at a personal
+# phone.
+#
+#   testsky run examples/settings-smoke.testsky.yaml                  # Android
+#   testsky run examples/settings-smoke.testsky.yaml --platform ios   # simulator
+#
+# Two things this example learned the hard way. The iOS simulator's Settings
+# search returns nothing for any query -- it builds no index -- so a search
+# flow cannot be the cross-platform one; the agent read "sonuç yok" and
+# reported it rather than inventing results, which is the behaviour we want and
+# a test we had to rewrite. And the steps are worded for what the screens
+# actually say: both devices here are Turkish. The third step's expectation
+# names the title it wants, because an earlier wording -- "a detail screen, no
+# longer the top-level list" -- was judged false on a screen the agent had
+# opened correctly: that screen is also a list. An expectation a careful reader
+# can argue with is an expectation the model will argue with.
+id: settings-smoke
+title: Move around the Settings app
+targets:
+  - { platform: android, app: com.android.settings }
+  - { platform: ios, app: com.apple.Preferences }
+policy:
+  runs: 1
+  pass_threshold: 1
+  budget: { max_steps: 20, max_usd: 0.20, max_seconds: 420 }
+setup:
+  - launch app
+steps:
+  - id: settings-open
+    expect: a phone Settings screen with a list of setting categories is visible
+
+  - id: scroll-list
+    do: scroll further down the settings list
+    expect: setting categories are visible
+
+  - id: open-general
+    do: open the general settings section, the row labelled "Genel" or "Genel yönetim"
+    expect: the screen's title is "Genel" or "Genel yönetim"
+
+  - id: back-to-list
+    do: go back to the previous screen
+    expect: the top-level settings list is visible again
+teardown:
+  - terminate app

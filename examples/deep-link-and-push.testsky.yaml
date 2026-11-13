@@ -1,0 +1,26 @@
+# Two flows every consumer app has and almost no suite covers, because doing
+# them by hand is miserable: arriving by deep link, and arriving by tapping a
+# notification.
+#
+# `push` is real on iOS -- simctl hands the payload to the system, so the app
+# receives what it would receive in the wild. On Android it is refused rather
+# than faked: FCM needs the app's own credentials, and a runner that pretends
+# otherwise reports a success nobody had.
+id: arriving-from-outside
+title: Deep link and push
+targets:
+  - { platform: ios, app: com.apple.Preferences }
+policy:
+  runs: 1
+  pass_threshold: 1
+  budget: { max_steps: 12, max_usd: 0.20, max_seconds: 300 }
+  # A test about pushes wants them allowed; every other test declines them.
+  popups: { notifications: allow }
+steps:
+  - id: deep-link
+    do: open the url "prefs:root=General" to jump straight into the general settings
+    expect: a settings screen is visible
+
+  - id: notification
+    do: send a push notification titled "Build 4.12 is ready" to the app, then open it
+    expect: a settings screen is visible

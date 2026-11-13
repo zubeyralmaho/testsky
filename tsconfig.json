@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["node"],
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": false,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@testsky/engine-core": ["packages/engine-core/src/index.ts"],
+      "@testsky/artifact": ["packages/artifact/src/index.ts"],
+      "@testsky/engine-midscene": ["packages/engine-midscene/src/index.ts"],
+      "@testsky/devicectl-ios": ["packages/devicectl-ios/src/index.ts"],
+      "@testsky/evidence": ["packages/evidence/src/index.ts"],
+      "@testsky/playground": ["packages/playground/src/index.ts"],
+      "@testsky/harness": ["packages/harness/src/index.ts"],
+      "@testsky/cache": ["packages/cache/src/index.ts"],
+      "@testsky/perception": ["packages/perception/src/index.ts"],
+      "@testsky/router": ["packages/router/src/index.ts"],
+      "@testsky/executor": ["packages/executor/src/index.ts"]
+    }
+  },
+  "include": ["packages/*/src/**/*.ts", "apps/*/src/**/*.ts"]
+}

@@ -1,0 +1,38 @@
+# Copy to ~/.testsky/models.yaml. Read by the runner, never by the control
+# plane: a customer's API key that reaches somebody else's database is a
+# liability nobody can insure.
+#
+# Check it with: testsky doctor --samples 5
+
+# Refuse any host that is not one of the endpoints below. A security team can
+# verify this claim in five minutes, which is the point of making it.
+offline: false
+
+tiers:
+  # Asked on every cache miss: "where is this element". The cheapest thing a
+  # model can be asked, and therefore the one worth running locally.
+  ground:
+    base_url: http://127.0.0.1:11434/v1        # ollama, vLLM, LM Studio, anything OpenAI-compatible
+    model: qwen2.5vl:7b
+    # api_key_env: TESTSKY_GROUND_KEY               # named, not written down
+    timeout_ms: 30000
+
+  # Judges expectations and decides what to do on an unexpected screen. Asked
+  # far less often, and worth a better model.
+  reason:
+    base_url: https://your-gateway.example.com/v1
+    model: your-vision-model
+    api_key_env: TESTSKY_REASON_KEY
+    price_in_per_m: 0.75
+    price_out_per_m: 3.75
+
+  # Reads the wreckage of a failed run afterwards, never during one.
+  triage:
+    enabled: false
+    base_url: https://your-gateway.example.com/v1
+    model: your-reasoning-model
+    api_key_env: TESTSKY_TRIAGE_KEY
+
+limits:
+  max_usd_per_test: 0.25
+  max_usd_per_run: 20.00

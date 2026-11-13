@@ -1,0 +1,13 @@
+id: bench-settings-general
+title: Open a section in Settings
+targets:
+  - { platform: ios, app: com.apple.Preferences }
+policy: { runs: 1, pass_threshold: 1, budget: { max_steps: 12, max_usd: 0.20, max_seconds: 240 } }
+setup: [launch app]
+steps:
+  - id: list
+    expect: a Settings screen with a list of setting categories is visible
+  - id: open-general
+    do: open the settings section labelled "Genel"
+    expect: the screen's title is "Genel"
+teardown: [terminate app]

@@ -1,0 +1,13 @@
+{
+  "name": "@testsky/cache",
+  "version": "0.0.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@testsky/artifact": "workspace:*",
+    "@testsky/engine-core": "workspace:*",
+    "@testsky/perception": "workspace:*"
+  }
+}

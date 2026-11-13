@@ -1,0 +1,26 @@
+# Runs on any Android emulator with nothing installed -- the smoke test for a
+# fresh machine. `testsky run examples/settings-airplane-mode.testsky.yaml`
+id: settings-airplane-mode
+title: Turn airplane mode on from Settings
+targets:
+  - { platform: android, app: com.android.settings }
+policy:
+  runs: 1
+  pass_threshold: 1
+  budget: { max_steps: 20, max_usd: 0.05, max_seconds: 180 }
+setup:
+  - launch app
+steps:
+  - id: open-network
+    do: open the network and internet settings
+    expect: a settings screen listing network options is visible
+
+  - id: airplane-on
+    do: turn airplane mode on
+    expect: the airplane mode switch is on
+
+  - id: airplane-off
+    do: turn airplane mode off
+    expect: the airplane mode switch is off
+teardown:
+  - terminate app

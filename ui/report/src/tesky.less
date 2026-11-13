@@ -1,0 +1,350 @@
+@import (reference) '@testsky/look/look.less';
+
+// testsky: Tesky's look over Midscene's report, loaded after the report's own
+// styles. Selectors start at the themed root so they outrank Midscene's own
+// light and dark rules without !important.
+
+:root[data-theme] {
+  .page-container {
+    font-family: @ts-sans;
+    color: var(--ts-text);
+    background: transparent;
+    border: 0;
+    padding: 0 16px 16px;
+  }
+
+  // The top bar: the mark, the page's name in the serif, quiet facts on the right.
+  .page-container > .page-nav {
+    height: 76px;
+    padding: 4px 8px 0;
+    background: transparent;
+
+    .page-nav-left {
+      gap: 18px;
+
+      .page-nav-heading {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+      }
+
+      .page-nav-eyebrow {
+        .ts-eyebrow();
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .page-nav-title {
+        font-family: @ts-serif;
+        font-weight: 400;
+        font-size: 30px;
+        line-height: 1;
+        letter-spacing: -0.015em;
+        color: var(--ts-text);
+        padding-left: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    .page-nav-right {
+      gap: 12px;
+      color: var(--ts-dim);
+
+      .page-nav-version {
+        font-family: @ts-mono;
+        font-size: 11.5px;
+        color: var(--ts-dim);
+        margin-right: 0;
+      }
+
+      .theme-divider {
+        background: var(--ts-hairline);
+      }
+
+      .theme-toggle-button {
+        width: 38px;
+        height: 38px;
+        border-radius: 999px;
+        background: var(--ts-fill);
+        box-shadow: var(--ts-rim);
+        color: var(--ts-text);
+
+        &:hover {
+          background: var(--ts-fill-hover);
+        }
+
+        svg {
+          width: 18px;
+          height: 18px;
+        }
+      }
+    }
+  }
+
+  .main-layout {
+    gap: 6px;
+  }
+
+  .page-side {
+    background: transparent;
+    margin-bottom: 0;
+    height: 100%;
+  }
+
+  .resize-handle {
+    background: transparent;
+  }
+
+  // Two floating glass panes: the steps, and the run.
+  .side-bar {
+    .ts-glass();
+    height: 100%;
+    overflow: hidden auto;
+    color: var(--ts-text);
+
+    .page-nav {
+      background: transparent;
+
+      .page-nav-title {
+        font-family: @ts-sans;
+        font-weight: 600;
+        color: var(--ts-text);
+      }
+    }
+
+    .side-seperator {
+      border-color: var(--ts-hairline-soft);
+      background: var(--ts-hairline-soft);
+    }
+
+    .side-sub-title {
+      font-family: @ts-sans;
+      font-weight: 600;
+      font-size: 13.5px;
+      color: var(--ts-text);
+    }
+
+    .tasks-table {
+      .table-header .header-cell {
+        .ts-eyebrow();
+      }
+
+      .table-body .task-row {
+        height: 38px;
+        border-radius: 999px;
+        padding: 0 4px;
+        color: var(--ts-text2);
+
+        &:hover {
+          background: var(--ts-fill);
+        }
+
+        &.selected {
+          .ts-pill-on();
+
+          // The status icons colour themselves inline; on the pill they take its ink.
+          .task-cell,
+          .task-cell * {
+            color: var(--ts-pill-on-text) !important;
+          }
+
+          .task-cell .cache-tag,
+          .task-cell .source-tag {
+            color: var(--ts-on-pill-ice-text) !important;
+            background: var(--ts-on-pill-ice-fill) !important;
+            box-shadow: inset 0 0 0 1px var(--ts-on-pill-ice-rim);
+          }
+        }
+
+        .column-time,
+        .column-intent,
+        .column-model,
+        .column-prompt,
+        .column-cached,
+        .column-completion {
+          font-family: @ts-mono;
+          font-size: 12px;
+        }
+
+        // A name too long for its column keeps its beginning -- the part that
+        // says what it is -- and ends in an ellipsis, rather than being cut
+        // from the left as right-aligned numbers are.
+        .column-intent,
+        .column-model {
+          justify-content: flex-start;
+
+          > span {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+        }
+      }
+
+      .table-header .header-cell.column-intent,
+      .table-header .header-cell.column-model {
+        justify-content: flex-start;
+      }
+
+      .table-summary {
+        font-family: @ts-mono;
+        color: var(--ts-dim);
+      }
+    }
+  }
+
+  .main-right {
+    .ts-glass();
+    color: var(--ts-text);
+
+    .main-right-header {
+      font-family: @ts-sans;
+      font-weight: 600;
+      color: var(--ts-text);
+    }
+
+    .main-content,
+    .main-content-container {
+      background: transparent;
+    }
+  }
+
+  // The tags testsky adds, and Midscene's own: half-round, lit, mono.
+  .cache-tag,
+  .source-tag {
+    border-radius: 999px !important;
+    font-family: @ts-mono;
+    font-size: 10.5px;
+    background: var(--ts-ice-fill) !important;
+    color: var(--ts-ice-text) !important;
+    box-shadow: inset 0 0 0 1px var(--ts-ice-rim);
+  }
+
+  // The information pane: mono labels over plain values, hairlines between.
+  .detail-side {
+    color: var(--ts-text);
+
+    .info-tabs .info-tab {
+      .ts-eyebrow();
+    }
+
+    details > summary .summary-text {
+      font-family: @ts-sans;
+      font-weight: 600;
+      color: var(--ts-text);
+    }
+
+    .meta-kv .meta {
+      .meta-key {
+        .ts-eyebrow();
+      }
+
+      .meta-value {
+        color: var(--ts-text);
+      }
+    }
+
+    .item-list .item .title {
+      .ts-eyebrow();
+    }
+
+    pre,
+    .description-content {
+      font-family: @ts-mono;
+    }
+  }
+
+  .detail-panel {
+    .ant-segmented {
+      border-radius: 999px;
+      padding: 4px;
+      background: var(--ts-fill);
+      box-shadow: var(--ts-rim);
+
+      .ant-segmented-item {
+        border-radius: 999px;
+      }
+
+      .ant-segmented-item-selected,
+      .ant-segmented-thumb {
+        .ts-pill-on();
+        border-radius: 999px;
+      }
+    }
+  }
+}
+
+// The report inside Tesky's frame: the steps sit in the sidebar as its list,
+// the run fills the rest; the controls the sidebar's places now carry are not
+// shown twice, and nothing is padded that does not need to be.
+:root[data-theme] .page-container:has(> .ts-frame) {
+  padding: 0;
+}
+
+:root[data-theme] .ts-frame {
+  > .resize-handle {
+    flex: none;
+    width: 8px;
+    cursor: col-resize;
+  }
+
+  .ts-side-body .side-bar {
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    overflow: visible;
+    height: auto;
+  }
+
+  .side-bar .tasks-table .table-header,
+  .side-bar .execution-info-section {
+    background: transparent;
+  }
+
+  .side-bar .tasks-table .table-body .task-row {
+    height: 32px;
+  }
+
+  .side-bar.human-view > .page-nav,
+  .side-bar .report-view-mode-switch,
+  .side-bar .execution-info-title,
+  .side-bar .side-seperator {
+    display: none;
+  }
+
+  .ts-work > .main-right {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    margin: 0;
+    .ts-glass(22px);
+
+    .main-right-header {
+      height: 36px;
+      padding: 0 14px;
+    }
+
+    // One frame around the run, not three: no rims inside the pane, and only
+    // as much padding as keeps the player off the glass edge.
+    .main-content {
+      border: 0;
+      border-radius: 0;
+    }
+
+    .detail-panel {
+      padding: 10px 12px;
+      background: transparent;
+
+      .view-switcher {
+        margin-bottom: 8px;
+      }
+    }
+  }
+}

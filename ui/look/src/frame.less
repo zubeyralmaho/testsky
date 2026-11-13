@@ -1,0 +1,409 @@
+@import (reference) './look.less';
+
+// Tesky's frame: a floating glass sidebar with the mark, the places and one
+// line at its foot; beside it the page, named in the serif on a single line.
+// Ported from the product's stylesheet (apps/control-plane look.ts), which is
+// drawn for the night, and tightened; the day is the design's Style-light
+// board: white glass, ink pills, the same orbs lit from above.
+
+:root,
+:root[data-theme='dark'] {
+  --ts-orb: radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0) 30%),
+    radial-gradient(circle at 50% 118%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(180deg, #22252b 0%, #0c0d10 100%);
+  --ts-orb-edge: inset 0 1px 1px rgba(255, 255, 255, 0.45), inset 0 -8px 14px rgba(0, 0, 0, 0.55), 0 12px 28px -8px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(255, 255, 255, 0.14);
+  --ts-orb-ink: #eef0f3;
+  --ts-orb-on: radial-gradient(circle at 35% 25%, #3d414a 0%, #0d0e11 72%);
+  --ts-orb-on-ink: #eef0f3;
+  --ts-nav-text: #d5d8de;
+  --ts-count: rgba(255, 255, 255, 0.08);
+  --ts-count-on: rgba(255, 255, 255, 0.5);
+}
+
+:root[data-theme='light'] {
+  --ts-orb: radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 34%),
+    linear-gradient(180deg, #ffffff 0%, #e7ecf2 100%);
+  --ts-orb-edge: inset 0 1px 1px #ffffff, inset 0 -6px 10px rgba(30, 50, 80, 0.12), 0 10px 22px -12px rgba(30, 50, 80, 0.45),
+    0 0 0 1px rgba(192, 203, 218, 0.7);
+  --ts-orb-ink: #0b0f16;
+  --ts-orb-on: radial-gradient(circle at 35% 25%, #ffffff 0%, #dfe5ed 80%);
+  --ts-orb-on-ink: #0b0f16;
+  --ts-nav-text: #283040;
+  --ts-count: rgba(11, 15, 22, 0.06);
+  --ts-count-on: rgba(255, 255, 255, 0.22);
+}
+
+// Tesky counts every box from its border; Midscene's pages do not, so the
+// frame says so for its own pieces.
+.ts-frame,
+.ts-side,
+.ts-side-in,
+.ts-main,
+.ts-header,
+.ts-nav-item,
+.ts-pill {
+  box-sizing: border-box;
+}
+
+// Minimal on purpose: a narrow glass sidebar, one header line, and the work.
+// Nothing stands between the run and the edge of the window but a hairline gap.
+.ts-frame {
+  position: relative;
+  display: flex;
+  height: 100vh;
+  font-family: @ts-sans;
+  color: var(--ts-text);
+}
+
+.ts-side {
+  flex: none;
+  width: 248px;
+  height: 100vh;
+  padding: 10px 0 10px 10px;
+  min-width: 0;
+}
+
+.ts-side-in {
+  .ts-glass(22px);
+  height: 100%;
+  padding: 12px 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.ts-side-logo {
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+
+  .testsky-logo,
+  .testsky-logo img {
+    height: 28px;
+  }
+}
+
+.ts-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ts-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 34px;
+  width: 100%;
+  padding: 0 10px 0 5px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ts-nav-text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--ts-fill);
+    color: var(--ts-text);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  &.on {
+    .ts-pill-on();
+    font-weight: 600;
+
+    .ts-orb {
+      background: var(--ts-orb-on);
+      color: var(--ts-orb-on-ink);
+    }
+
+    .ts-count {
+      background: var(--ts-count-on);
+      color: var(--ts-pill-on-text);
+    }
+  }
+
+  // A switch that is on is lit, not selected: the pill is for the page shown.
+  &.toggle.on {
+    background: var(--ts-ice-fill);
+    box-shadow: inset 0 0 0 1px var(--ts-ice-rim);
+    color: var(--ts-ice-text);
+    font-weight: 500;
+
+    .ts-orb {
+      background: var(--ts-orb);
+      color: var(--ts-orb-ink);
+    }
+
+    .ts-count {
+      background: var(--ts-ice-fill);
+      color: var(--ts-ice-text);
+    }
+  }
+
+  .ts-nav-label {
+    flex-grow: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.ts-orb {
+  flex-shrink: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ts-orb);
+  box-shadow: var(--ts-orb-edge);
+  color: var(--ts-orb-ink);
+
+  &.ice {
+    background: radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0) 30%),
+      radial-gradient(circle at 50% 120%, rgba(122, 200, 245, 0.35) 0%, rgba(122, 200, 245, 0) 60%), linear-gradient(180deg, #22252b 0%, #0c0d10 100%);
+    color: #eef0f3;
+  }
+
+  &.amber {
+    background: radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0) 30%),
+      radial-gradient(circle at 50% 120%, rgba(231, 179, 117, 0.45) 0%, rgba(231, 179, 117, 0) 60%), linear-gradient(180deg, #22252b 0%, #0c0d10 100%);
+    color: #eef0f3;
+  }
+}
+
+// By day the lit orbs are lit from above too, the light underneath kept.
+:root[data-theme='light'] .ts-orb {
+  &.ice {
+    background: radial-gradient(circle at 32% 22%, #ffffff 0%, rgba(255, 255, 255, 0) 34%),
+      radial-gradient(circle at 50% 120%, rgba(31, 134, 208, 0.35) 0%, rgba(31, 134, 208, 0) 62%), linear-gradient(180deg, #ffffff 0%, #e7ecf2 100%);
+    color: #0b0f16;
+  }
+
+  &.amber {
+    background: radial-gradient(circle at 32% 22%, #ffffff 0%, rgba(255, 255, 255, 0) 34%),
+      radial-gradient(circle at 50% 120%, rgba(176, 110, 28, 0.38) 0%, rgba(176, 110, 28, 0) 62%), linear-gradient(180deg, #ffffff 0%, #ece7df 100%);
+    color: #0b0f16;
+  }
+}
+
+.ts-count {
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: @ts-mono;
+  font-size: 10.5px;
+  background: var(--ts-count);
+  color: var(--ts-muted);
+}
+
+// What the sidebar holds below its places: a run's steps, a note.
+.ts-side-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border-top: 1px solid var(--ts-hairline-soft);
+  padding-top: 6px;
+}
+
+// One line at the foot: where this page is attached, and the day-night switch.
+.ts-side-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px 0 8px;
+  border-top: 1px solid var(--ts-hairline-soft);
+  min-width: 0;
+
+  .ts-side-foot-text {
+    flex: 1;
+    min-width: 0;
+    font-family: @ts-mono;
+    font-size: 11px;
+    color: var(--ts-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.ts-round {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: var(--ts-fill);
+  box-shadow: var(--ts-rim);
+  color: var(--ts-text);
+
+  &:hover {
+    background: var(--ts-fill-hover);
+  }
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+.ts-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--ts-dim);
+  flex-shrink: 0;
+
+  &.live {
+    background: var(--ts-ice);
+    box-shadow: 0 0 8px 2px var(--ts-ice-fill);
+    animation: ts-live 3.2s ease-in-out infinite;
+  }
+}
+
+@keyframes ts-live {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ts-dot.live {
+    animation: none;
+  }
+}
+
+.ts-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+  height: 100vh;
+  padding: 10px 10px 10px 0;
+}
+
+// The page's one line: its name in the serif, the verdict beside it, the
+// numbers on the right.
+.ts-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  padding: 0 4px 0 6px;
+  flex-shrink: 0;
+
+  .ts-title {
+    margin: 0;
+    font-family: @ts-serif;
+    font-weight: 400;
+    font-size: 26px;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    color: var(--ts-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex-shrink: 1;
+  }
+
+  .ts-header-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+}
+
+.ts-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  white-space: nowrap;
+  background: var(--ts-fill);
+  box-shadow: var(--ts-rim);
+  color: var(--ts-text2);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &.mono {
+    font-family: @ts-mono;
+    font-size: 11px;
+  }
+
+  &.ice {
+    background: var(--ts-ice-fill);
+    box-shadow: inset 0 0 0 1px var(--ts-ice-rim);
+    color: var(--ts-ice-text);
+  }
+
+  &.amber {
+    background: var(--ts-amber-fill);
+    box-shadow: inset 0 0 0 1px var(--ts-amber-rim);
+    color: var(--ts-amber-text);
+  }
+
+  .ts-pill-code {
+    font-family: @ts-mono;
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+  }
+}
+
+.ts-work {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+// A narrow window folds the sidebar to its orbs, as the product does.
+@media (max-width: 1080px) {
+  .ts-side-in {
+    align-items: center;
+  }
+
+  .ts-nav-item {
+    width: 34px;
+    padding: 0 5px;
+
+    .ts-nav-label,
+    .ts-count {
+      display: none;
+    }
+  }
+
+  .ts-side-foot .ts-side-foot-text {
+    display: none;
+  }
+}

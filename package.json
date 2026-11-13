@@ -1,0 +1,22 @@
+{
+  "name": "testsky",
+  "version": "0.0.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "packageManager": "pnpm@9.3.0",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test packages/*/src/*.test.ts apps/*/src/*.test.ts",
+    "testsky": "node apps/cli/src/main.ts",
+    "build:report": "pnpm --filter @testsky/report build",
+    "build:playground": "pnpm --filter @testsky/playground-ui build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.9.2"
+  }
+}

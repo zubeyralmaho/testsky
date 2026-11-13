@@ -1,0 +1,36 @@
+# The shape a real subscription test takes. Needs the app installed and a
+# sandbox store account; `use fixture:` is not implemented yet (month 4) and
+# the run will say so rather than pretend the precondition was met.
+id: paywall-annual-purchase
+title: Buy the annual plan from the onboarding paywall
+targets:
+  - { platform: ios, app: co.example.app }
+  - { platform: android, app: co.example.app }
+policy:
+  runs: 3
+  pass_threshold: 3
+  budget: { max_steps: 40, max_usd: 0.10, max_seconds: 300 }
+setup:
+  - launch app
+  - use fixture: fresh_install_no_subscription
+steps:
+  - id: onboarding
+    do: skip the onboarding by tapping continue until the paywall appears
+    expect: a paywall with at least two subscription options is visible
+
+  - id: annual
+    do: select the annual plan
+    expect: the annual plan is selected and shows a price
+
+  - id: purchase
+    do: tap the continue or subscribe button
+
+  - id: sandbox
+    do: confirm the store's sandbox purchase dialog
+
+  - id: confirm
+    expect: the app shows premium content and no paywall
+    extract:
+      plan_name: the name of the purchased plan
+teardown:
+  - terminate app

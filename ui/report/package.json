@@ -1,0 +1,46 @@
+{
+  "name": "@testsky/report",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "The run report viewer: Midscene's report app (MIT, from web-infra-dev/midscene v1.15.4), built into one HTML template.",
+  "exports": {
+    "./template": "./dist/index.html"
+  },
+  "scripts": {
+    "dev": "rsbuild dev",
+    "build": "rsbuild build",
+    "typecheck": "tsc --noEmit -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.3.1",
+    "@midscene/core": "1.15.4",
+    "@midscene/playground": "1.15.4",
+    "@midscene/shared": "1.15.4",
+    "@midscene/web": "1.15.4",
+    "@testsky/look": "workspace:*",
+    "@testsky/visualizer": "workspace:*",
+    "antd": "^5.21.6",
+    "fflate": "0.8.2",
+    "js-yaml": "4.1.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-json-view-lite": "2.5.0",
+    "react-resizable-panels": "2.0.22",
+    "zustand": "4.5.2"
+  },
+  "devDependencies": {
+    "@rsbuild/core": "^1.6.15",
+    "@rsbuild/plugin-less": "^1.5.0",
+    "@rsbuild/plugin-node-polyfill": "1.4.2",
+    "@rsbuild/plugin-react": "^1.4.1",
+    "@rsbuild/plugin-svgr": "^1.2.2",
+    "@types/chrome": "0.0.279",
+    "@types/js-yaml": "4.0.9",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1",
+    "less": "^4.2.0",
+    "typescript": "^5.8.3"
+  }
+}

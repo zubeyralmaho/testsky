@@ -1,0 +1,26 @@
+.testsky-logo {
+  display: flex;
+  align-items: center;
+  height: 36px;
+
+  img {
+    display: block;
+    height: 36px;
+    width: auto;
+    border-radius: 8px;
+  }
+
+  .testsky-logo-dark {
+    display: none;
+  }
+}
+
+[data-theme='dark'] .testsky-logo {
+  .testsky-logo-light {
+    display: none;
+  }
+
+  .testsky-logo-dark {
+    display: block;
+  }
+}

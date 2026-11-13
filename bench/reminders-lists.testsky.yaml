@@ -1,0 +1,18 @@
+# A fresh simulator shows Reminders' welcome screen on first launch, and the
+# run that found that out reported it honestly rather than passing: "a
+# welcome/tutorial page, not the Reminders app or its lists". First-run screens
+# are not an edge case -- they are what a test meets first on a clean device --
+# so the test says so.
+id: bench-reminders-lists
+title: Reminders opens, past its welcome screen
+targets:
+  - { platform: ios, app: com.apple.reminders }
+policy: { runs: 1, pass_threshold: 1, budget: { max_steps: 12, max_usd: 0.20, max_seconds: 240 } }
+setup: [launch app]
+steps:
+  - id: opens
+    expect: the Reminders app is open -- either its welcome screen or a list of reminders
+  - id: past-welcome
+    do: get past any welcome or introduction screen and reach the reminders themselves
+    expect: a reminders list, a "no reminders" state, or an add button is visible
+teardown: [terminate app]

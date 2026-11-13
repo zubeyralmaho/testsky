@@ -1,0 +1,24 @@
+# A test that fails on purpose, to see what the report does with a red step.
+# The first two steps are true; the third asks for something that is not there.
+id: failing-demo
+title: What a failure looks like
+targets:
+  - { platform: ios, app: com.apple.Preferences }
+policy:
+  runs: 1
+  pass_threshold: 1
+  budget: { max_steps: 10, max_usd: 0.20, max_seconds: 240 }
+setup:
+  - launch app
+steps:
+  - id: settings-open
+    expect: a phone Settings screen with a list of setting categories is visible
+
+  - id: open-general
+    do: open the settings section labelled "Genel"
+    expect: the screen's title is "Genel"
+
+  - id: find-the-missing-thing
+    expect: a row labelled "Teleportation" is visible on this screen
+teardown:
+  - terminate app

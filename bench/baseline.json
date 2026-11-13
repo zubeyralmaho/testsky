@@ -1,0 +1,91 @@
+{
+  "at": "2026-09-24T08:25:06.145Z",
+  "platform": "ios",
+  "device": "B3C87FA5-B20D-4577-BB67-BA6DCEA41CD0",
+  "tests": 5,
+  "runs": 10,
+  "stepSuccess": 1,
+  "runsPassed": 10,
+  "usdPerTest": 0,
+  "tokensPerTest": 9273.1,
+  "callsPerTest": 3.4,
+  "latencyP50": 2288,
+  "latencyP95": 3906,
+  "byTest": [
+    {
+      "test": "bench-calendar-month",
+      "runs": 2,
+      "passed": 2,
+      "stepsTotal": 2,
+      "stepsPassed": 2,
+      "usd": 0,
+      "tokensIn": 5296,
+      "calls": 2,
+      "outcomes": [
+        "PASS",
+        "PASS"
+      ],
+      "latencyP95": 2940
+    },
+    {
+      "test": "bench-maps-search",
+      "runs": 2,
+      "passed": 2,
+      "stepsTotal": 4,
+      "stepsPassed": 4,
+      "usd": 0,
+      "tokensIn": 21834,
+      "calls": 8,
+      "outcomes": [
+        "PASS",
+        "PASS"
+      ],
+      "latencyP95": 4503
+    },
+    {
+      "test": "bench-reminders-lists",
+      "runs": 2,
+      "passed": 2,
+      "stepsTotal": 4,
+      "stepsPassed": 4,
+      "usd": 0,
+      "tokensIn": 21883,
+      "calls": 8,
+      "outcomes": [
+        "PASS",
+        "PASS"
+      ],
+      "latencyP95": 3794
+    },
+    {
+      "test": "bench-safari-address",
+      "runs": 2,
+      "passed": 2,
+      "stepsTotal": 4,
+      "stepsPassed": 4,
+      "usd": 0,
+      "tokensIn": 21866,
+      "calls": 8,
+      "outcomes": [
+        "PASS",
+        "PASS"
+      ],
+      "latencyP95": 3426
+    },
+    {
+      "test": "bench-settings-general",
+      "runs": 2,
+      "passed": 2,
+      "stepsTotal": 4,
+      "stepsPassed": 4,
+      "usd": 0,
+      "tokensIn": 21852,
+      "calls": 8,
+      "outcomes": [
+        "PASS",
+        "PASS"
+      ],
+      "latencyP95": 3341
+    }
+  ]
+}

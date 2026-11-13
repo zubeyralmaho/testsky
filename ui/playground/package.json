@@ -1,0 +1,36 @@
+{
+  "name": "@testsky/playground-ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "The playground page: Midscene's playground conversation (MIT) beside a live phone screen with an accessibility-tree inspector.",
+  "exports": {
+    "./page": "./dist/index.html"
+  },
+  "scripts": {
+    "dev": "rsbuild dev",
+    "build": "rsbuild build",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@midscene/shared": "1.15.4",
+    "@testsky/look": "workspace:*",
+    "@testsky/visualizer": "workspace:*",
+    "antd": "^5.21.6",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-resizable-panels": "2.0.22"
+  },
+  "devDependencies": {
+    "@rsbuild/core": "^1.6.15",
+    "@rsbuild/plugin-less": "^1.5.0",
+    "@rsbuild/plugin-node-polyfill": "1.4.2",
+    "@rsbuild/plugin-react": "^1.4.1",
+    "@rsbuild/plugin-svgr": "^1.2.2",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1",
+    "less": "^4.2.0",
+    "typescript": "^5.8.3"
+  }
+}

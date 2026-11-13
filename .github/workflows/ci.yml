@@ -1,0 +1,36 @@
+# Every push to main and every pull request: a clean install from the lockfile,
+# the type checks of the engine and of both pages, and the tests. The pages
+# are built too, because a page that type-checks can still fail to bundle.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm --filter @testsky/report typecheck
+      - run: pnpm --filter @testsky/playground-ui typecheck
+      - run: pnpm test
+      - run: pnpm build:report
+      - run: pnpm build:playground

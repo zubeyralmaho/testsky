@@ -1,0 +1,27 @@
+# Judging a screen from the system's own description of it, not from a picture.
+#
+# Run it on Android's lock-confirmation screen, which no app is allowed to
+# photograph:
+#
+#   adb shell am start -a android.app.action.SET_NEW_PASSWORD
+#   testsky run examples/secure-screen.testsky.yaml
+#
+# `channel: tree` is the author saying "judge this from the accessibility
+# tree". The agent does the same thing by itself when a capture comes back
+# blank -- a payment PIN, a DRM video, a banking login on the phones that
+# enforce it -- which is the case every vision-only tool stops working on.
+# Written out explicitly here so the capability is visible rather than implied.
+id: secure-screen
+title: Read a screen from its accessibility tree
+targets:
+  - { platform: android, app: com.android.settings }
+policy:
+  runs: 1
+  pass_threshold: 1
+  budget: { max_steps: 6, max_usd: 0.10, max_seconds: 180 }
+steps:
+  - id: lock-prompt
+    channel: tree
+    expect: the screen is asking for a screen lock -- a pattern, PIN or password prompt
+    extract:
+      prompt: the instruction shown to the person, word for word

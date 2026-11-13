@@ -1,0 +1,23 @@
+{
+  "name": "@testsky/cli",
+  "version": "0.0.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "testsky": "./src/main.ts"
+  },
+  "dependencies": {
+    "@midscene/android": "1.13.3",
+    "@testsky/artifact": "workspace:*",
+    "@testsky/engine-core": "workspace:*",
+    "@testsky/engine-midscene": "workspace:*",
+    "@testsky/executor": "workspace:*",
+    "@testsky/router": "workspace:*",
+    "@testsky/perception": "workspace:*",
+    "@testsky/devicectl-ios": "workspace:*",
+    "@testsky/evidence": "workspace:*",
+    "@testsky/harness": "workspace:*",
+    "@testsky/playground": "workspace:*"
+  }
+}

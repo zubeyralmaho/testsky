@@ -1,0 +1,20 @@
+{
+  "name": "@testsky/executor",
+  "version": "0.0.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@testsky/artifact": "workspace:*",
+    "@testsky/engine-core": "workspace:*",
+    "@testsky/router": "workspace:*",
+    "@testsky/cache": "workspace:*",
+    "@testsky/perception": "workspace:*"
+  },
+  "devDependencies": {
+    "sharp": "^0.34.2"
+  }
+}

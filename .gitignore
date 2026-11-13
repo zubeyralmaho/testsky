@@ -1,0 +1,19 @@
+node_modules/
+dist/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+runs/
+.testsky/
+scratch/
+
+# A lock is a memory of one device's screens. A team commits its own -- it is
+# reviewed like code -- but the ones learned here, on one Samsung and one
+# simulator in Turkish, would only produce confusing heals on somebody else's.
+examples/*.lock.*.yaml
+bench/*.lock.*.yaml
+# A runner keeps its locks beside its tests directory, which here is the
+# checkout itself.
+/*.lock.*.yaml

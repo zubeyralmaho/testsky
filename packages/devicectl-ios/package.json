@@ -1,0 +1,14 @@
+{
+  "name": "@testsky/devicectl-ios",
+  "version": "0.0.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "appium-webdriveragent": "^16.12.10",
+    "@testsky/engine-core": "workspace:*"
+  }
+}

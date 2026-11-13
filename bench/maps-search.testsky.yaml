@@ -1,0 +1,13 @@
+id: bench-maps-search
+title: Maps offers a search field
+targets:
+  - { platform: ios, app: com.apple.Maps }
+policy: { runs: 1, pass_threshold: 1, budget: { max_steps: 12, max_usd: 0.20, max_seconds: 240 } }
+setup: [launch app]
+steps:
+  - id: map
+    expect: a map is visible
+  - id: search
+    do: tap the search field
+    expect: a search field is focused with a keyboard visible
+teardown: [terminate app]

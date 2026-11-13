@@ -1,0 +1,184 @@
+// Tesky's look, shared by the viewer and the playground: its tokens by night
+// and by day, the ground behind everything, and glass. From the design's
+// Style boards and the product's own stylesheet (apps/control-plane look.ts).
+
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --ts-sky: #050608;
+  --ts-text: #edeff3;
+  --ts-text2: #c9cdd4;
+  --ts-muted: #aeb3bc;
+  --ts-dim: #8e95a1;
+  --ts-ice: #7ac8f5;
+  --ts-ice-text: #bfe3fa;
+  --ts-ice-fill: rgba(122, 200, 245, 0.14);
+  --ts-ice-rim: rgba(122, 200, 245, 0.38);
+  --ts-amber: #e7b375;
+  --ts-amber-text: #f0cfa4;
+  --ts-amber-fill: rgba(231, 179, 117, 0.14);
+  --ts-amber-rim: rgba(231, 179, 117, 0.4);
+  --ts-hairline: rgba(255, 255, 255, 0.11);
+  --ts-hairline-soft: rgba(255, 255, 255, 0.07);
+  --ts-fill: rgba(255, 255, 255, 0.05);
+  --ts-fill-hover: rgba(255, 255, 255, 0.09);
+  --ts-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  --ts-glass: linear-gradient(160deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.045) 42%, rgba(255, 255, 255, 0.025) 100%);
+  --ts-glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(255, 255, 255, 0.03), 0 0 0 1px rgba(255, 255, 255, 0.09),
+    0 40px 80px -32px rgba(0, 0, 0, 0.9);
+  --ts-pill-on: linear-gradient(180deg, #ffffff 0%, #e6e8ec 100%);
+  --ts-pill-on-text: #0a0b0e;
+  --ts-pill-on-edge: inset 0 1px 0 #ffffff, 0 10px 24px -12px #000000;
+  --ts-stage: rgba(0, 0, 0, 0.35);
+  // A lit tag sitting on the pill that marks what is selected.
+  --ts-on-pill-ice-text: #1a6dab;
+  --ts-on-pill-ice-fill: rgba(31, 134, 208, 0.12);
+  --ts-on-pill-ice-rim: rgba(31, 134, 208, 0.35);
+  --ts-glow: radial-gradient(900px 520px at 85% -10%, rgba(205, 216, 232, 0.09) 0%, rgba(205, 216, 232, 0) 70%),
+    radial-gradient(700px 400px at 30% 110%, rgba(205, 216, 232, 0.05) 0%, rgba(205, 216, 232, 0) 70%);
+}
+
+// By day the ground is morning sky, glass is white, and the one dark thing is
+// the ink pill the CTA turns into.
+:root[data-theme='light'] {
+  color-scheme: light;
+  --ts-sky: #f3f6fa;
+  --ts-text: #0b0f16;
+  --ts-text2: #283040;
+  --ts-muted: #4b5463;
+  --ts-dim: #616b7c;
+  --ts-ice: #1f86d0;
+  --ts-ice-text: #1a6dab;
+  --ts-ice-fill: rgba(31, 134, 208, 0.1);
+  --ts-ice-rim: rgba(31, 134, 208, 0.32);
+  --ts-amber: #b06e1c;
+  --ts-amber-text: #8a5414;
+  --ts-amber-fill: rgba(176, 110, 28, 0.1);
+  --ts-amber-rim: rgba(176, 110, 28, 0.34);
+  --ts-hairline: rgba(11, 15, 22, 0.09);
+  --ts-hairline-soft: rgba(11, 15, 22, 0.06);
+  --ts-fill: rgba(11, 15, 22, 0.04);
+  --ts-fill-hover: rgba(11, 15, 22, 0.07);
+  --ts-rim: inset 0 0 0 1px rgba(11, 15, 22, 0.08);
+  --ts-glass: linear-gradient(160deg, rgba(255, 255, 255, 0.84) 0%, rgba(255, 255, 255, 0.68) 42%, rgba(255, 255, 255, 0.54) 100%);
+  --ts-glass-edge: inset 0 1px 0 #ffffff, 0 0 0 1px rgba(192, 203, 218, 0.55), 0 30px 60px -36px rgba(30, 50, 80, 0.35);
+  --ts-pill-on: linear-gradient(180deg, #1c2230 0%, #0b0f16 100%);
+  --ts-pill-on-text: #ffffff;
+  --ts-pill-on-edge: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 10px 24px -14px rgba(11, 15, 22, 0.6);
+  --ts-stage: rgba(11, 15, 22, 0.045);
+  --ts-on-pill-ice-text: #bfe3fa;
+  --ts-on-pill-ice-fill: rgba(122, 200, 245, 0.18);
+  --ts-on-pill-ice-rim: rgba(122, 200, 245, 0.42);
+  --ts-glow: radial-gradient(900px 520px at 85% -10%, rgba(149, 191, 229, 0.38) 0%, rgba(149, 191, 229, 0) 70%),
+    radial-gradient(800px 420px at 15% 110%, rgba(244, 232, 211, 0.6) 0%, rgba(244, 232, 211, 0) 70%);
+}
+
+@ts-sans: 'Geist', 'Helvetica Neue', Helvetica, system-ui, sans-serif;
+@ts-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+@ts-serif: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+
+// Glass: a soft gradient, a lit top edge and a hairline rim, over whatever is behind.
+.ts-glass(@radius: 28px) {
+  background: var(--ts-glass);
+  border: 0;
+  border-radius: @radius;
+  box-shadow: var(--ts-glass-edge);
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+}
+
+// A mono label above a thing, as the product prints its facts.
+.ts-eyebrow() {
+  font-family: @ts-mono;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ts-dim);
+}
+
+// Round or half-round, the white one by night and the ink one by day.
+.ts-pill-on() {
+  background: var(--ts-pill-on);
+  color: var(--ts-pill-on-text);
+  box-shadow: var(--ts-pill-on-edge);
+}
+
+html,
+body {
+  background: var(--ts-sky) !important;
+  color: var(--ts-text);
+  font-family: @ts-sans;
+  -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: var(--ts-glow);
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: @ts-mono;
+}
+
+::selection {
+  background: var(--ts-ice-fill);
+}
+
+// Midscene's player, as both pages show it: the caption is a dark glass pill,
+// the action in it is lit ice in mono, and the seek bar fills with ice.
+:root[data-theme] {
+  .player-subtitle {
+    height: 34px;
+    padding: 0 14px 0 6px;
+    border-radius: 999px;
+    background: rgba(10, 11, 14, 0.72);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    font-family: @ts-sans;
+
+    .player-subtitle-badge {
+      height: 24px;
+      padding: 0 9px;
+      border-radius: 999px;
+      font-family: @ts-mono;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #0a0b0e;
+      background: #7ac8f5;
+    }
+  }
+
+  .seek-bar-fill {
+    background: var(--ts-ice);
+  }
+}
+
+// Midscene's own variables, pointed at Tesky's: every visualizer component
+// that reads them follows the look without an override of its own.
+:root[data-theme] {
+  --midscene-text-primary: var(--ts-text);
+  --midscene-text-secondary: var(--ts-muted);
+  --midscene-text-tertiary: var(--ts-dim);
+  --midscene-accent: var(--ts-ice);
+  --midscene-surface: transparent;
+  --midscene-surface-muted: var(--ts-fill);
+  --midscene-surface-hover: var(--ts-fill-hover);
+  --midscene-surface-elevated: var(--ts-sky);
+  --midscene-border-control: var(--ts-hairline);
+  --midscene-border-strong: var(--ts-hairline);
+  --midscene-timeline-connector: var(--ts-hairline);
+}
