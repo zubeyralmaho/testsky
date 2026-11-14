@@ -123,6 +123,13 @@ A vision-only agent such as Midscene inherits the first column. testsky uses
 Midscene's device layer (screenshots, input, uiautomator dumps) and does its
 own perception, grounding, planning and judging.
 
+On Android, `TESTSKY_ANDROID_ENGINE=agent` swaps Midscene's device layer for
+testsky's own agent: a small jar that `app_process` runs on the phone, over
+one socket, with no app installed and nothing left behind. On one phone it
+took a picture in 0.1 s and read the tree in 20 ms, where `screencap` took
+1.2 s and a uiautomator dump 2.3 s. It is new, so Midscene stays the default
+until the agent has run on more phones.
+
 ## Finding a target
 
 Both sources look every time, from one capture:
