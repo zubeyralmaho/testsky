@@ -41,6 +41,7 @@ import type {
   Point,
   CallAnswer,
   CallAnswerRequest,
+  Size,
   TreeNode,
   TreeSnapshot,
   VisionStats,
@@ -171,6 +172,24 @@ export function callNotificationKeys(dumpsys: string): string[] {
 }
 
 const PERMISSION_DIALOG = /^com\.(?:google\.)?android\.(?:permissioncontroller|packageinstaller)$/;
+
+/** Whether a frame is the other way round from a size: one wider than tall, the other taller than wide. */
+export function turned(frame: Size, size: Size): boolean {
+  if (frame.width === frame.height || size.width === size.height) return false;
+  return (frame.width > frame.height) !== (size.width > size.height);
+}
+
+/**
+ * Midscene's kept screen size, rotation and tap scale, forgotten: the phone
+ * turned. They are private fields of the version pinned above, and a test
+ * holds them to it.
+ */
+export function forgetScreenInfo(device: unknown): void {
+  const kept = device as Record<string, unknown>;
+  kept.cachedScreenSize = null;
+  kept.cachedOrientation = null;
+  kept.cachedAdjustScale = null;
+}
 
 /**
  * Whether what is in front after launching `id` is that app coming up: the
@@ -351,12 +370,14 @@ export class AndroidMidsceneEngine implements Engine {
     if (device.platform !== "android") {
       throw new Error(`the Android engine cannot drive a ${device.platform} device`);
     }
-    // The screen's size is read again on every look, not kept from the
-    // first: a phone with auto-rotate on turns while a run goes, and a size
-    // kept from portrait sends every tap of a landscape screen off its edge.
-    // Seen on a Galaxy A53: three taps on "Connections" landed below
-    // the bottom of a landscape screen and the step stopped as a loop.
-    const android = new AndroidDevice(device.id, { autoDismissKeyboard: true, alwaysRefreshScreenInfo: true });
+    // The screen's size is kept, and read again when a look shows the phone
+    // has turned: a phone with auto-rotate on turns while a run goes, and a
+    // size kept from portrait sends every tap of a landscape screen off its
+    // edge -- on a Galaxy A53, three taps on "Connections" landed below the
+    // bottom of a landscape screen. Reading it on every call instead costs
+    // four adb round trips each time: 0.35 s per look and 0.67 s before every
+    // tap on a Nothing phone, and twice that before a swipe.
+    const android = new AndroidDevice(device.id, { autoDismissKeyboard: true });
     await android.connect();
     this.device = android;
     this.handle = device;
@@ -389,6 +410,19 @@ export class AndroidMidsceneEngine implements Engine {
     if (!decidedFrom.tree) return false;
     const raw = (await this.connected.getUITree().catch(() => undefined)) as unknown as { root?: RawTreeNode } | undefined;
     return Boolean(raw?.root) && sameControlAt(decidedFrom.tree.root, normaliseNode(raw!.root!, 0), point);
+  }
+
+  /**
+   * The screen's size in points, as Midscene keeps it -- read again only when
+   * the frame says the phone has turned. A turn always shows in the frame,
+   * whose width and height swap, and every look reads a frame anyway.
+   */
+  private async screenSize(pixels: Size): Promise<Size> {
+    const device = this.connected;
+    const kept = await device.size();
+    if (!turned(pixels, kept)) return kept;
+    forgetScreenInfo(device);
+    return device.size();
   }
 
   /** One capture, measured and hashed. Blank frames are retried: a phone that
@@ -481,8 +515,8 @@ export class AndroidMidsceneEngine implements Engine {
     if (state.appId) focus.appId = state.appId;
     if (state.screenId) focus.screenId = state.screenId;
     const frameData = opts?.settle ? await this.captureSettled(opts.settleMs ?? 6000, opts.changedFrom) : await this.captureFrame();
-    const logical = await device.size();
     const pixels = pngSize(frameData.bytes);
+    const logical = await this.screenSize(pixels);
     // The device reports points; the screenshot arrives in pixels. One place
     // learns the ratio between them, and it is here.
     this.ratio = logical.width > 0 ? pixels.width / logical.width : 1;
