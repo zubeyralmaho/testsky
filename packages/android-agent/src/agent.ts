@@ -25,6 +25,12 @@ export const AGENT_VERSION = "0.2.0";
 const REMOTE_JAR = "/data/local/tmp/testsky-agent.jar";
 const DEVICE_PORT = 27183;
 const MAIN = "dev.testsky.agent.Main";
+/**
+ * The agent's command line, as pkill -f matches it: bracketed, so the
+ * pattern does not match the shell that runs pkill -- which would kill that
+ * shell before the rest of its command ran.
+ */
+const MAIN_PATTERN = "dev[.]testsky[.]agent[.]Main";
 
 /** adb from the SDK testsky was pointed at, or the one on the PATH. */
 export function adbPath(): string {
@@ -119,7 +125,7 @@ export class AndroidAgent {
     const timeout = options.timeoutMs ?? 15_000;
     const device = (...args: string[]) => run(adb, ["-s", serial, ...args], { timeout: 30_000, maxBuffer: 16 * 1024 * 1024 });
     // An agent a crashed run left behind holds the accessibility connection and the port.
-    await device("shell", `pkill -f ${MAIN} || true`).catch(() => undefined);
+    await device("shell", `pkill -f '${MAIN_PATTERN}' || true`).catch(() => undefined);
     await device("push", options.jar ?? AGENT_JAR, REMOTE_JAR);
     const child = spawn(adb, ["-s", serial, "shell", `CLASSPATH=${REMOTE_JAR} app_process / ${MAIN} ${DEVICE_PORT}`], {
       stdio: ["ignore", "pipe", "pipe"],
@@ -232,6 +238,6 @@ export class AndroidAgent {
     const device = (...args: string[]) => run(this.adb, ["-s", this.serial, ...args], { timeout: 15_000 });
     await device("forward", "--remove", `tcp:${this.hostPort}`).catch(() => undefined);
     if (this.child.exitCode === null) this.child.kill();
-    await device("shell", `pkill -f ${MAIN}; rm -f ${REMOTE_JAR}`).catch(() => undefined);
+    await device("shell", `pkill -f '${MAIN_PATTERN}'; rm -f ${REMOTE_JAR}`).catch(() => undefined);
   }
 }

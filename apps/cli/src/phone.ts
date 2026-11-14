@@ -18,6 +18,7 @@ import { isTestFile } from "@testsky/artifact";
 import type { DeviceHandle, Engine, Lease, Platform, TreeNode, TreeSnapshot } from "@testsky/engine-core";
 import { describeOutcome, isFailure, type Outcome } from "@testsky/executor";
 import { engineFor, StepSession, type SavedStep, type StepBody, type TriedStep } from "@testsky/harness";
+import { toPng } from "@testsky/perception";
 import { CostLedger, Router, routerConfigFromEnv } from "@testsky/router";
 
 import { findDevices, resolveDevice } from "./devices.ts";
@@ -60,7 +61,8 @@ export function extensionOf(bytes: Buffer): "png" | "jpg" | "webp" {
 /** A frame on disk: where it was asked to go, or a file of its own in the temporary folder. */
 export async function keepFrame(bytes: Buffer, asked: string | undefined, what: string): Promise<string> {
   const path = asked ? resolve(asked) : join(tmpdir(), `testsky-${what}-${Date.now()}.${extensionOf(bytes)}`);
-  await writeFile(path, bytes);
+  // A file asked for as a .png is a PNG, whatever the phone sent: the agent sends JPEGs.
+  await writeFile(path, /\.png$/i.test(path) ? await toPng(bytes) : bytes);
   return path;
 }
 
