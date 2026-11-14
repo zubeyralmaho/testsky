@@ -1,1 +1,3 @@
 build/
+# The built agent is kept: a rig that runs testsky has no Android SDK to build it.
+!dist/
