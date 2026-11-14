@@ -48,11 +48,13 @@ import type {
 } from "@testsky/engine-core";
 import { DeviceNotReadyError } from "@testsky/engine-core";
 import { callAnswerControl, dhash, hamming, isVisionBlind, restlessRegions, sameControlAt, spotMoved, treeHash, visionStats } from "@testsky/perception";
+import { AGENT_VERSION } from "@testsky/android-agent";
 import type { Router } from "@testsky/router";
 
 import { LAYOUT_COMMAND, layoutToTree } from "./android-layout.ts";
 import { androidLogStream } from "./logs.ts";
-import { pngSize } from "./png.ts";
+import { AgentAndroidDevice, type AdbShell } from "./agent-device.ts";
+import { imageSize } from "./png.ts";
 
 const MIDSCENE_VERSION = "1.13.3";
 /** Actions aimed at a spot, whose staleness is that spot's. */
@@ -76,10 +78,56 @@ const LAUNCH_CONTENT_FLOOR = 8;
 /** How long a tree that would not come is not asked for again. */
 const TREE_BACKOFF_MS = 30_000;
 
+/** What drives the phone under this engine: Midscene's adb client, or testsky's own agent on the phone. */
+export type AndroidDriver = "midscene" | "agent";
+
 export interface AndroidEngineOptions {
   router: Router;
   /** Step id, for the cost ledger. Set by the executor before each step. */
   stepId?: string;
+  /** Midscene unless said otherwise. */
+  driver?: AndroidDriver;
+}
+
+/**
+ * The Android driver a run asks for: `TESTSKY_ANDROID_ENGINE=agent` runs
+ * testsky's own agent on the phone, and anything else unset runs Midscene.
+ */
+export function androidDriver(env: Record<string, string | undefined> = process.env): AndroidDriver {
+  const asked = env.TESTSKY_ANDROID_ENGINE?.trim().toLowerCase();
+  if (!asked || asked === "midscene") return "midscene";
+  if (asked === "agent") return "agent";
+  throw new Error(`TESTSKY_ANDROID_ENGINE is "${asked}": it takes agent or midscene`);
+}
+
+/**
+ * What the engine asks of a phone, in the shape of Midscene's AndroidDevice --
+ * which testsky's agent device wears too, so the engine's knowledge of real
+ * phones serves both.
+ */
+interface AndroidLike {
+  /** The tree comes quickly from the device itself: no yadb first. */
+  readonly fastTree?: boolean;
+  connect(): Promise<AdbShell>;
+  size(): Promise<Size>;
+  screenshotBase64(): Promise<string>;
+  getUITree(): Promise<unknown>;
+  launch(uri: string): Promise<unknown>;
+  destroy(): Promise<void>;
+  inputPrimitives: {
+    pointer: {
+      tap(point: Point): Promise<unknown>;
+      doubleClick(point: Point): Promise<unknown>;
+      longPress(point: Point, options?: { duration?: number }): Promise<unknown>;
+    };
+    keyboard: {
+      clearInput(target: undefined): Promise<unknown>;
+      keyboardPress(key: string): Promise<unknown>;
+      typeText(text: string, options?: { autoDismissKeyboard?: boolean }): Promise<unknown>;
+    };
+    touch: { swipe(from: Point, to: Point, options?: { duration?: number }): Promise<unknown> };
+    system?: { backButton?(): Promise<unknown>; homeButton?(): Promise<unknown>; recentAppsButton?(): Promise<unknown> };
+  };
 }
 
 /**
@@ -242,7 +290,7 @@ export function focusIn(dumpsys: string): { appId?: string; screenId?: string } 
 }
 
 export class AndroidMidsceneEngine implements Engine {
-  readonly name = `midscene@${MIDSCENE_VERSION}`;
+  readonly name: string;
   readonly capabilities: EngineCapabilities = {
     tree: true,
     // Frame streaming and log capture arrive with the evidence package (W6).
@@ -252,7 +300,8 @@ export class AndroidMidsceneEngine implements Engine {
     appInstall: true,
   };
 
-  private device?: AndroidDevice;
+  private device?: AndroidLike;
+  private readonly driver: AndroidDriver;
   private handle?: DeviceHandle;
   private ratio = 1;
   /** Until when the tree is not asked for, after uiautomator gave up on a busy screen. */
@@ -265,6 +314,8 @@ export class AndroidMidsceneEngine implements Engine {
 
   constructor(options: AndroidEngineOptions) {
     this.router = options.router;
+    this.driver = options.driver ?? "midscene";
+    this.name = this.driver === "agent" ? `agent@${AGENT_VERSION}` : `midscene@${MIDSCENE_VERSION}`;
     if (options.stepId !== undefined) this.stepId = options.stepId;
   }
 
@@ -348,8 +399,9 @@ export class AndroidMidsceneEngine implements Engine {
     this.stayOnBefore = undefined;
   }
 
-  /** By yadb, and by uiautomator on a phone where yadb gives nothing. */
-  private async captureTree(device: AndroidDevice): Promise<{ root?: RawTreeNode; capturedAt?: number }> {
+  /** From the agent; else by yadb, and by uiautomator on a phone where yadb gives nothing. */
+  private async captureTree(device: AndroidLike): Promise<{ root?: RawTreeNode; capturedAt?: number }> {
+    if (device.fastTree) return (await device.getUITree()) as { root?: RawTreeNode; capturedAt?: number };
     try {
       const raw = device as unknown as { ensureYadb(): Promise<void>; getAdb(): Promise<{ shell(command: string, options?: { timeout?: number }): Promise<string> }> };
       await raw.ensureYadb();
@@ -361,7 +413,7 @@ export class AndroidMidsceneEngine implements Engine {
     return (await device.getUITree()) as unknown as { root?: RawTreeNode; capturedAt?: number };
   }
 
-  private get connected(): AndroidDevice {
+  private get connected(): AndroidLike {
     if (!this.device) throw new Error("engine is not attached to a device");
     return this.device;
   }
@@ -377,7 +429,8 @@ export class AndroidMidsceneEngine implements Engine {
     // bottom of a landscape screen. Reading it on every call instead costs
     // four adb round trips each time: 0.35 s per look and 0.67 s before every
     // tap on a Nothing phone, and twice that before a swipe.
-    const android = new AndroidDevice(device.id, { autoDismissKeyboard: true });
+    const android: AndroidLike =
+      this.driver === "agent" ? new AgentAndroidDevice(device.id) : (new AndroidDevice(device.id, { autoDismissKeyboard: true }) as unknown as AndroidLike);
     await android.connect();
     this.device = android;
     this.handle = device;
@@ -515,7 +568,7 @@ export class AndroidMidsceneEngine implements Engine {
     if (state.appId) focus.appId = state.appId;
     if (state.screenId) focus.screenId = state.screenId;
     const frameData = opts?.settle ? await this.captureSettled(opts.settleMs ?? 6000, opts.changedFrom) : await this.captureFrame();
-    const pixels = pngSize(frameData.bytes);
+    const pixels = imageSize(frameData.bytes);
     const logical = await this.screenSize(pixels);
     // The device reports points; the screenshot arrives in pixels. One place
     // learns the ratio between them, and it is here.

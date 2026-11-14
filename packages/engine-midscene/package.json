@@ -13,6 +13,7 @@
     "@testsky/router": "workspace:*",
     "@testsky/perception": "workspace:*",
     "@midscene/ios": "1.13.3",
-    "@testsky/devicectl-ios": "workspace:*"
+    "@testsky/devicectl-ios": "workspace:*",
+    "@testsky/android-agent": "workspace:*"
   }
 }

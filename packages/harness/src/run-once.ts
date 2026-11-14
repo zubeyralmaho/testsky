@@ -15,7 +15,7 @@ import { join } from "node:path";
 
 import type { HealDecision, LockFile, PopupRules, TestFile } from "@testsky/artifact";
 import type { DeviceHandle, Engine, Platform } from "@testsky/engine-core";
-import { AndroidMidsceneEngine, IosMidsceneEngine } from "@testsky/engine-midscene";
+import { AndroidMidsceneEngine, androidDriver, IosMidsceneEngine } from "@testsky/engine-midscene";
 import {
   buildMidsceneReport,
   buildReport,
@@ -123,7 +123,7 @@ export function engineFor(
         ...(options.onProgress ? { onProgress: options.onProgress } : {}),
         ...(options.wdaPort !== undefined ? { wdaPort: options.wdaPort } : {}),
       })
-    : new AndroidMidsceneEngine({ router });
+    : new AndroidMidsceneEngine({ router, driver: androidDriver() });
 }
 
 /** Inline the recording only while it stays attachable. */

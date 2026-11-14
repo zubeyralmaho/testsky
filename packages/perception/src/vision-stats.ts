@@ -71,6 +71,16 @@ export async function toJpeg(png: Buffer, maxWidth = 1000): Promise<Buffer> {
   }
 }
 
+/** A frame as PNG, whatever it came as: the record keeps every frame as one. Bytes that are not a picture stay as they are. */
+export async function toPng(image: Buffer): Promise<Buffer> {
+  if (image.subarray(0, 8).toString("hex") === "89504e470d0a1a0a") return image;
+  try {
+    return await sharp(image).png({ compressionLevel: 3 }).toBuffer();
+  } catch {
+    return image;
+  }
+}
+
 export async function toWebp(png: Buffer, maxWidth = 1000): Promise<Buffer> {
   try {
     return await sharp(png).resize({ width: maxWidth, withoutEnlargement: true }).webp({ quality: 72 }).toBuffer();

@@ -51,6 +51,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/router
 
+  packages/android-agent: {}
+
   packages/artifact:
     dependencies:
       '@testsky/engine-core':
@@ -91,6 +93,9 @@ importers:
       '@midscene/ios':
         specifier: 1.13.3
         version: 1.13.3(@types/node@24.13.6)(ws@8.22.0)
+      '@testsky/android-agent':
+        specifier: workspace:*
+        version: link:../android-agent
       '@testsky/devicectl-ios':
         specifier: workspace:*
         version: link:../devicectl-ios

@@ -16,6 +16,7 @@ import { join } from "node:path";
 
 import type { RunEvent, TestResult } from "@testsky/executor";
 import type { CostLedger, LedgerEntry } from "@testsky/router";
+import { toPng } from "@testsky/perception";
 
 export class RunRecord {
   /** Final once `open` has made it: two runs that start together are given two folders. */
@@ -66,7 +67,8 @@ export class RunRecord {
     this.queue = this.queue
       .then(async () => {
         if (screenshot && shot) {
-          await writeFile(join(this.dir, `${shot}.png`), screenshot);
+          // An agent's frames are JPEGs: a frame on disk is a PNG, as every reader of a run expects.
+          await writeFile(join(this.dir, `${shot}.png`), await toPng(screenshot));
         }
         await appendFile(this.eventsPath, `${JSON.stringify(rest)}\n`);
       })
