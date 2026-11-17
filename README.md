@@ -16,6 +16,7 @@
 </p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/@zybo/testsky"><img alt="npm: @zybo/testsky" src="https://img.shields.io/npm/v/@zybo/testsky?label=npm"></a>
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-2f6feb"></a>
   <img alt="Node.js 22.18 or newer" src="https://img.shields.io/badge/node-%E2%89%A5%2022.18-3c873a">
   <img alt="Android, iOS simulators and iPhones" src="https://img.shields.io/badge/runs%20on-Android%20%C2%B7%20iOS-111111">
@@ -81,26 +82,44 @@ CSV export.
 
 You need:
 
-- **Node.js 22.18 or newer and pnpm.** testsky runs its TypeScript as it is,
-  with no build.
+- **Node.js 22.18 or newer.**
 - **A phone:** an Android phone with USB debugging or an emulator, through
   adb; an iOS simulator, through Xcode; or an iPhone whose WebDriverAgent is
   already running and forwarded. testsky does not sign or start one.
 - **A vision model you bring,** behind any OpenAI-compatible endpoint: a
   cloud gateway or a local server (vLLM, ollama).
 
+Install it with npm or pnpm:
+
+```bash
+npm install -g @zybo/testsky
+# or
+pnpm add -g @zybo/testsky
+```
+
+pnpm 10 and later list `sharp` and the ffmpeg installer under "Ignored build
+scripts"; testsky runs without them. Then:
+
+```bash
+export TESTSKY_MODEL_BASE_URL=... TESTSKY_MODEL_NAME=... TESTSKY_MODEL_API_KEY=...
+testsky doctor        # does it see a phone, and does the model answer -- and land on target
+testsky run settings-smoke.testsky.yaml --platform ios   # examples/settings-smoke.testsky.yaml
+```
+
+Or run it from a clone, with pnpm. testsky runs its TypeScript as it is, with
+no build, and each `testsky` command below becomes `pnpm testsky`
+(`pnpm -s testsky` with `--json`):
+
 ```bash
 git clone https://github.com/zubeyralmaho/testsky.git && cd testsky
 pnpm install
-export TESTSKY_MODEL_BASE_URL=... TESTSKY_MODEL_NAME=... TESTSKY_MODEL_API_KEY=...
-pnpm testsky doctor        # does it see a phone, and does the model answer -- and land on target
 pnpm testsky run examples/settings-smoke.testsky.yaml --platform ios
 ```
 
 The key stays in your environment: the `TESTSKY_MODEL_*` variables, a
 `.env` where you run testsky, or a variable that `~/.testsky/models.yaml`
-names ([examples/models.yaml](examples/models.yaml)). `pnpm typecheck` and
-`pnpm test` run without a device or a model.
+names ([examples/models.yaml](examples/models.yaml)). In a clone,
+`pnpm typecheck` and `pnpm test` run without a device or a model.
 
 ## Why two ways
 
@@ -276,8 +295,7 @@ failed, a test file with a mistake.
 ## Playground
 
 ```bash
-pnpm build:playground
-pnpm testsky playground --platform android
+testsky playground --platform android   # from a clone: pnpm build:playground, then pnpm testsky playground
 ```
 
 opens a page on localhost: Midscene's playground conversation on the left,
@@ -304,17 +322,17 @@ to ten seconds on an emulator. An iPhone's is polled, a screenshot a second.
 
 Every command that a script or a coding agent drives answers `--json`:
 stdout is one JSON object and nothing else, and what a person reads goes to
-stderr. Run it as `pnpm -s testsky` (or `node apps/cli/src/main.ts`):
-without `-s`, pnpm prints two lines of its own on stdout first. The exit
-codes are the same everywhere: 0 passed, 1 the app may be broken, 2 could not
-tell or could not run.
+stderr. From a clone, run it as `pnpm -s testsky` (or
+`node apps/cli/src/main.ts`): without `-s`, pnpm prints two lines of its own
+on stdout first. The exit codes are the same everywhere: 0 passed, 1 the app
+may be broken, 2 could not tell or could not run.
 
 ```bash
-pnpm -s testsky validate tests/checkout.testsky.yaml --json   # no device, no model
-pnpm -s testsky run tests/checkout.testsky.yaml --json        # the verdict, each step, the run's folder
-pnpm -s testsky report --md                                   # the newest run, for a pull request
-pnpm -s testsky look --tree --json                            # the screen as a file, the tree outlined
-pnpm -s testsky step --do "tap the cart icon" --expect "the cart is open" --save tests/checkout.testsky.yaml
+testsky validate tests/checkout.testsky.yaml --json   # no device, no model
+testsky run tests/checkout.testsky.yaml --json        # the verdict, each step, the run's folder
+testsky report --md                                   # the newest run, for a pull request
+testsky look --tree --json                            # the screen as a file, the tree outlined
+testsky step --do "tap the cart icon" --expect "the cart is open" --save tests/checkout.testsky.yaml
 ```
 
 `step` runs one step as a test of one step, the way the playground does, and
@@ -337,10 +355,14 @@ id, as `testsky devices` prints it:
 ```json
 {
   "mcpServers": {
-    "testsky": { "command": "ssh", "args": ["phones", "cd ~/testsky && node apps/cli/src/main.ts mcp --devices emulator-5554"] }
+    "testsky": { "command": "ssh", "args": ["phones", "testsky mcp --devices emulator-5554"] }
   }
 }
 ```
+
+ssh runs that command without your shell's profile, so `testsky` and `node`
+have to be on the PATH it gets. From a clone, the command is
+`cd ~/testsky && node apps/cli/src/main.ts mcp --devices emulator-5554`.
 
 It never takes a phone another run holds, cannot accept or reject a heal,
 and keeps the model key in its own `.env`.
@@ -348,7 +370,7 @@ and keeps the model key in its own `.env`.
 ## Several phones at once
 
 ```bash
-pnpm testsky run tests/wifi-connect.testsky.yaml tests/wifi-forget.testsky.yaml --devices all
+testsky run tests/wifi-connect.testsky.yaml tests/wifi-forget.testsky.yaml --devices all
 ```
 
 Every test runs on every phone given (`all` is every usable Android device and
